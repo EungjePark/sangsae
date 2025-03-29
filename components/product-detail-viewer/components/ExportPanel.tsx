@@ -21,11 +21,10 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({ content }) => {
   const placeholderMessage = "내용이 준비되지 않았습니다. 상세페이지 생성을 완료해주세요.";
   
   // 원시 콘텐츠 가져오기 (없을 경우 대체 텍스트)
-  const rawContent = hasRawContent ? content.rawContent : placeholderMessage;
-  
-  // HTML 및 Markdown 콘텐츠 가져오기
-  const htmlContent = hasHtmlContent ? content.html : `<div>${placeholderMessage}</div>`;
-  const markdownContent = hasMarkdownContent ? content.markdown : `# ${placeholderMessage}`;
+  // 문자열이 항상 있도록 기본값 설정
+  const rawContent: string = hasRawContent ? content.rawContent! : placeholderMessage;
+  const htmlContent: string = hasHtmlContent ? content.html! : `<div>${placeholderMessage}</div>`;
+  const markdownContent: string = hasMarkdownContent ? content.markdown! : `# ${placeholderMessage}`;
   
   // 기본 파일명 설정
   const defaultFilename = '상세페이지_내보내기';
