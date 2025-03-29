@@ -123,12 +123,22 @@ const AppPage: NextPage = () => {
         content: data.content,
       })) as ProductDetailSection[];
       
+      // 원시 콘텐츠 생성 (모든 섹션의 내용 통합)
+      const rawContent = sections.map(s => `---섹션시작:${s.id}---\n${s.content}\n---섹션끝---`).join('\n\n');
+      
+      // HTML 및 Markdown 생성 로직 (추후 구현)
+      const htmlContent = '<div class="product-content">HTML 컨텐츠는 추후 생성됩니다.</div>';
+      const markdownContent = '# Markdown 컨텐츠는 추후 생성됩니다.';
+      
+      // 캐시 이름 생성 - 상품명과 현재 시간 포함
+      const cacheName = `${productName}_${new Date().toISOString().split('T')[0]}`;
+      
       const contentData: ProductDetailContent = {
         sections,
-        cacheName: `${productName}_${new Date().toISOString()}`,
-        rawContent: JSON.stringify(apiData),
-        html: '',
-        markdown: '',
+        cacheName: cacheName,
+        rawContent: rawContent,
+        html: htmlContent,
+        markdown: markdownContent,
         updatedAt: new Date().toISOString(),
         tokenUsage: { input: 0, output: 0 }
       };
