@@ -29,7 +29,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             onClick={handleRegenerate}
             variant="outline"
             size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff8fb] hover:border-pink-200 transition-colors shadow-sm"
+            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
             title="상세페이지를 새로 생성합니다"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -40,7 +40,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             onClick={handleOpenPreview}
             variant="outline"
             size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff8fb] hover:border-pink-200 transition-colors shadow-sm"
+            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
             title="전체 상세페이지를 한 번에 봅니다"
           >
             <Eye className="h-4 w-4 mr-2" />
@@ -53,7 +53,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             onClick={handleExportPdf}
             variant="outline"
             size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff8fb] hover:border-pink-200 transition-colors shadow-sm"
+            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
             disabled={isExporting}
             title="상세페이지를 PDF 파일로 저장합니다"
           >

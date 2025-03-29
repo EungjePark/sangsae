@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
 import { ProductDetailContent, ProductDetailSection } from '@/types/product';
 
 interface ProductState {
@@ -22,7 +22,8 @@ interface ProductState {
   reset: () => void;
 }
 
-export const useProductStore = create<ProductState>((set) => ({
+// v5 방식으로 create 사용
+export const useProductStore = create<ProductState>()((set) => ({
   // 초기 상태
   generatedContent: null,
   isGenerating: false,

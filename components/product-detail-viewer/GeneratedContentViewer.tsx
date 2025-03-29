@@ -85,10 +85,21 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
 
   // --- Effects ---
   useEffect(() => {
-    if (Array.isArray(generatedContent?.sections)) {
-      const newTocSections = (generatedContent.sections as ProductDetailSection[])
+    if (generatedContent?.sections && Array.isArray(generatedContent.sections)) {
+      // 섹션 ID를 한글 제목으로 직접 매핑
+      const newTocSections = generatedContent.sections
         .filter(s => s && s.id && s.id !== 'faq')
-        .map(s => ({ id: s.id, title: s.title || s.id }));
+        .map(s => {
+          // 섹션 ID에서 숫자만 있는 경우를 처리
+          const sectionId = s.id;
+          const koreanTitle = getKoreanTitle(sectionId);
+          
+          return {
+            id: sectionId,
+            title: koreanTitle || s.title || `섹션 ${sectionId}` // 한글 제목 없으면 대체 텍스트 사용
+          };
+        });
+      
       setTocSections(newTocSections);
     } else {
       setTocSections([]);
@@ -195,9 +206,9 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
         {/* Sticky Header Area */}
         <div className={`sticky top-0 z-10 bg-white transition-all duration-300 ${headerShadow ? 'shadow-md' : ''}`}>
           {/* Product Info Header */}
-          <CardHeader className="p-4 pb-3 bg-gradient-to-r from-[#fff8fb] to-white border-b border-gray-100">
+          <CardHeader className="p-4 pb-3 bg-gradient-to-r from-[#fff1f8] to-white border-b border-pink-100">
             <div className="flex items-start">
-              <div className="bg-[#ff68b4] p-2 rounded-full mr-4 text-white flex-shrink-0">
+              <div className="bg-[#ff68b4] p-2 rounded-full mr-4 text-white flex-shrink-0 shadow-sm">
                 {getEmoji('product_intro') || '📦'}
               </div>
               <div className="flex-1">
@@ -225,7 +236,7 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
             {productKeywords && productKeywords.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
                 <div className="flex items-center text-xs mr-1.5 text-gray-500 font-medium">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-[#ff68b4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                   키워드:
@@ -243,7 +254,7 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
           </CardHeader>
 
           {/* 목차 영역 - 디자인 개선 */}
-          <div className="px-4 py-3 bg-white border-b border-gray-100">
+          <div className="px-4 py-3 bg-white border-b border-pink-50">
             <div className="flex items-center mb-2">
               <div className="flex items-center bg-[#ff68b4] bg-opacity-10 text-[#ff68b4] px-2 py-0.5 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -260,12 +271,12 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
                   key={section.id}
                   href={`#section-${section.id}`}
                   onClick={(e) => handleScrollToSection(e, section.id)}
-                  className="flex items-center p-1.5 rounded-md bg-white hover:bg-pink-50 border border-gray-100 hover:border-pink-200 transition-all group text-xs"
-                  title={getKoreanTitle(section.id)}
+                  className="flex items-center p-1.5 rounded-md bg-white hover:bg-[#fff1f8] border border-gray-100 hover:border-pink-200 transition-all group text-xs"
+                  title={section.title}
                 >
                   <span className="text-[#ff68b4] mr-1.5 text-sm group-hover:scale-110 transition-transform">{getEmoji(section.id)}</span>
                   <span className="font-medium truncate text-gray-700 group-hover:text-[#ff68b4]">
-                    {getKoreanTitle(section.id)}
+                    {section.title}
                   </span>
                 </a>
               ))}
@@ -273,7 +284,7 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
           </div>
 
           {/* Action Toolbar - 디자인 개선 */}
-          <div className="px-4 py-3 bg-white border-b border-gray-100">
+          <div className="px-4 py-3 bg-white border-b border-pink-50">
             <ActionToolbar
               handleRegenerate={handleRegenerate}
               handleOpenPreview={handleOpenPreview}

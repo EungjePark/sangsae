@@ -27,5 +27,5 @@ export interface GeneratedContentViewerProps {
 // Type for Table of Contents items
 export interface TocItem {
   id: string;
-  title: string; // Keep title for potential use, though getKoreanTitle is primary
+  title: string; // 확실하게 string 타입 명시
 }

@@ -63,18 +63,18 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
         });
 
       return (
-        <div className="generated-sections-preview max-w-3xl mx-auto space-y-8"> {/* Add spacing between sections */}
+        <div className="generated-sections-preview max-w-3xl mx-auto space-y-10"> {/* 섹션 간격 증가 */}
           {sectionsToRender.map((section) => (
-            <div key={section.id} className="section-container pb-6 border-b last:border-b-0 border-gray-200">
-              {/* Section Header */}
-              <div className="section-header flex items-center mb-4">
-                <span className="mr-2 text-xl">{getEmoji(section.id)}</span>
-                <h3 className="text-lg font-bold text-[#ff68b4]">
+            <div key={section.id} className={`section-container p-6 mb-8 rounded-xl shadow-sm ${section.id === 'faq' ? 'bg-white' : 'bg-white'} border-0 hover:shadow-md transition-all`}>
+              {/* Section Header - 애플 스타일 적용 */}
+              <div className="section-header flex items-center mb-6 pb-4">
+                <span className="mr-3 text-xl bg-[#f5f5f7] p-2.5 rounded-xl text-[#1d1d1f]">{getEmoji(section.id)}</span>
+                <h3 className="text-xl font-semibold text-[#1d1d1f]">
                   {getKoreanTitle(section.id)}
                 </h3>
               </div>
-              {/* Section Content */}
-              <div className="section-content pl-2">
+              {/* Section Content - 여백 증가 */}
+              <div className="section-content px-3 pt-2">
                 {renderSection(section, targetCustomers, productCategory)}
               </div>
             </div>

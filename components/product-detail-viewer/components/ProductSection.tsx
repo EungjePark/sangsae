@@ -334,69 +334,70 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
     );
   };
 
-  // 섹션 내용 렌더링 분기 처리
+  // 섹션 내용 렌더링 함수
   const renderSectionContent = () => {
+    if (!section.content) {
+      return <p className="text-gray-500 italic text-sm">이 섹션에 내용이 없습니다.</p>;
+    }
+
+    // 특수 섹션 처리
+    if (isFAQ || section.id === 'faq') {
+      return renderFAQContent(section.content);
+    }
+
+    // 섹션 유형별 렌더링
     switch (currentSectionType) {
-      case SectionType.FAQ:
-        return renderFAQContent(section.content);
       case SectionType.CORE_FEATURES:
+      case SectionType.MAIN_FEATURE:
+      case SectionType.SUB_FEATURES:
+      case SectionType.HIGHLIGHT_FEATURES:
         return renderFeatureContent(section.content);
       case SectionType.BENEFITS:
         return renderBenefitsContent(section.content);
       case SectionType.PRODUCT_INFO:
         return renderProductInfoContent(section.content);
       default:
-        return (
-          <div className="prose prose-sm max-w-none mt-1">
-            {renderSection(section, targetCustomers, productCategory)}
-          </div>
-        );
+        // 일반 마크다운 콘텐츠 처리
+        // 수정된 renderSection 함수에 맞게 인자 2개만 전달
+        return renderSection(section, targetCustomers, productCategory);
     }
   };
 
   return (
     <Card
       id={`section-${section.id}`}
-      className={`${getSectionClass(section.id, draggedSection === section.id)} border border-gray-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200`}
-      draggable // Make the section draggable
+      className={getSectionClass(section.id, draggedSection === section.id)}
+      draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
-      onDragLeave={onDragLeave} // Handle drag leave
+      onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      {/* Section Header */}
-      <CardHeader className="py-3 px-4 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 flex flex-row items-center justify-between">
-        <div className="flex items-center cursor-move" title="드래그하여 순서 변경">
-          <span className="text-lg mr-2">{getEmoji(section.id)}</span>
-          <h3 className="text-gray-800 text-base font-semibold">{getKoreanTitle(section.id)}</h3>
-        </div>
-        <div className="flex items-center space-x-1">
-          {/* Hide Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-gray-100"
-            onClick={onHide}
-            title="섹션 숨기기"
-          >
-            <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-800" />
-          </Button>
+      {/* 섹션 헤더 - 섹션 ID 대신 한글 제목 표시 */}
+      <CardHeader className="p-4 flex items-center justify-between bg-gradient-to-r from-[#fff1f8] to-white border-b border-pink-100">
+        <div className="flex items-center">
+          <span className="text-[#ff68b4] mr-2 text-xl">{getEmoji(section.id)}</span>
+          <h3 className="font-semibold text-gray-800 hover:text-[#ff68b4] transition-colors">
+            {getKoreanTitle(section.id) || section.title || "섹션 제목 없음"}
+          </h3>
         </div>
       </CardHeader>
 
-      {/* Section Content Area */}
-      <CardContent className="p-4">
+      {/* 콘텐츠 영역 */}
+      <CardContent className="p-5 pt-4 bg-white">
         {isEditing === true ? (
-          // Editing Mode
+          // 편집 모드
           <div className="mt-1">
             <textarea
               ref={textareaRef}
-              className="w-full min-h-[150px] p-3 border rounded-md focus:ring-1 focus:ring-[#ff68b4] focus:border-[#ff68b4] text-sm leading-relaxed" // Adjusted styling
-              value={editedContent ?? ''} // Use editedContent, fallback to empty string
-              onChange={handleTextareaInput} // Use combined handler
-              rows={5} // Initial rows, height adjusts dynamically
-            />
+              value={editedContent}
+              onChange={handleTextareaInput}
+              className="w-full min-h-[150px] p-3 text-sm border rounded-md border-gray-300 focus:border-[#ff68b4] focus:ring focus:ring-[#ff68b4]/20 transition-all"
+              placeholder="여기에 내용을 작성하세요..."
+            ></textarea>
+            
+            {/* 기존 편집 버튼 영역 */}
             <div className="flex space-x-2 mt-3 justify-end">
               <Button
                 size="sm"
@@ -416,19 +417,20 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
             </div>
           </div>
         ) : isEditing === 'regenerating' ? (
-          // Regenerating State
+          // 재생성 모드
           <div className="mt-1 py-6 flex items-center justify-center text-center">
             <Loader2 className="h-5 w-5 text-[#ff68b4] animate-spin mr-2" />
             <span className="text-gray-600 text-sm">AI가 새로운 내용을 만들고 있어요...</span>
           </div>
         ) : (
-          // View Mode
+          // 조회 모드
           <>
-            {/* 개선된 섹션 내용 렌더링 */}
-            <div className="mt-1">
+            {/* 개선된 섹션 내용 렌더링 - 마크다운 지원 */}
+            <div className="mt-1 prose prose-sm max-w-none prose-pink">
               {renderSectionContent()}
             </div>
-            {/* Action buttons for View Mode */}
+            
+            {/* 기존 액션 버튼 영역 */}
             <div className="flex mt-4 pt-3 space-x-2 border-t border-gray-100 justify-end">
               <Button
                 variant="ghost"

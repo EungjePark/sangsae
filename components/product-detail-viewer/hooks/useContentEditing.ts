@@ -48,13 +48,11 @@ export function useContentEditing(): ContentEditingHook {
   // 토스트 훅 사용
   const { toast } = useToast();
   
-  // Zustand 스토어에서 필요한 상태와 액션 가져오기
-  const { 
-    updateSectionContent, 
-    targetCustomers, 
-    productCategory, 
-    generatedContent 
-  } = useProductStore();
+  // Zustand 스토어에서 필요한 상태와 액션 가져오기 - 각각 개별적으로 가져오기
+  const updateSectionContent = useProductStore(state => state.updateSectionContent); 
+  const targetCustomers = useProductStore(state => state.targetCustomers);
+  const productCategory = useProductStore(state => state.productCategory);
+  const generatedContent = useProductStore(state => state.generatedContent);
 
   const startEditing = useCallback((sectionId: string, initialContent: string) => {
     setEditingSection(sectionId);

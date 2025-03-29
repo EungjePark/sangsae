@@ -19,6 +19,17 @@ const sectionTitleMap: Record<string, string> = {
   'shipping_returns': '배송 및 반품 안내',
 };
 
+// 숫자 ID에 대한 한글 제목 매핑
+const numericSectionTitleMap: Record<string, string> = {
+  '0': '제품 소개',
+  '1': '주요 특징',
+  '2': '기능 및 장점',
+  '3': '제품 상세 정보',
+  '4': '사용 방법',
+  '5': '배송 및 반품 안내',
+  '6': '자주 묻는 질문'
+};
+
 // 각 제품 카테고리별 필수 섹션 정의
 const commonSections = [
   'title_block',
@@ -80,7 +91,18 @@ export function getSectionIds(category: ProductCategory): string[] {
 
 // 섹션 ID에 해당하는 한글 제목 반환
 export function getKoreanTitle(sectionId: string): string {
-  return sectionTitleMap[sectionId] || sectionId;
+  // 숫자만 있는 경우 숫자 ID용 매핑 사용
+  if (/^\d+$/.test(sectionId)) {
+    return numericSectionTitleMap[sectionId] || `섹션 ${sectionId}`;
+  }
+  
+  // 기존 매핑에 있는 경우 매핑 결과 반환
+  if (sectionTitleMap[sectionId]) {
+    return sectionTitleMap[sectionId];
+  }
+  
+  // 그 외의 경우 ID 그대로 반환
+  return sectionId;
 }
 
 // 섹션 순서 반환 (UI나 클립보드 복사 시 사용)

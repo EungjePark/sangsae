@@ -22,7 +22,6 @@ class ApiCache {
    * 데이터를 캐시에 저장
    */
   set<T>(key: string, data: T, customTTL?: number): void {
-    console.log('[CacheManager] 캐시 저장:', key, data);
     this.cache.set(key, {
       data,
       timestamp: Date.now()
@@ -40,21 +39,17 @@ class ApiCache {
    */
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    console.log('[CacheManager] 캐시 조회:', key, item);
     
     if (!item) {
-      console.log('[CacheManager] 캐시 없음:', key);
       return null;
     }
     
     // TTL 체크하여 만료된 경우 삭제
     if (Date.now() - item.timestamp > this.TTL) {
-      console.log('[CacheManager] 캐시 만료됨:', key);
       this.cache.delete(key);
       return null;
     }
     
-    console.log('[CacheManager] 캐시 히트:', key);
     return item.data as T;
   }
 

@@ -6,7 +6,6 @@ import { getKoreanTitle } from '@/lib/sections/section-manager'; // Assuming thi
 // TODO: Implement or import these functions if needed elsewhere, or keep local if only used here
 const enhanceContentForTarget = (content: string, targetCustomers: string, productCategory: string): string => {
   // Placeholder implementation - adapt based on actual logic if needed
-  console.log('enhanceContentForTarget called with:', { targetCustomers, productCategory });
   return content;
 };
 
@@ -145,27 +144,42 @@ const renderFAQSection = (lines: string[], targetCustomers: string = '', product
 
   // FAQ 렌더링 UI 개선
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {displayFaqItems.map((item, idx) => (
-        <div key={`faq-${idx}`} className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
-          {/* 질문 */}
-          <div className="flex items-start p-4 bg-gradient-to-r from-[#fff1f8] to-white">
-            <span className="font-semibold text-base mr-3 text-[#ff68b4]">Q</span>
-            <p className="text-gray-800 font-medium text-sm flex-1">{item.question}</p>
-          </div>
-
-          {/* 답변 */}
-          <div className="flex p-4 bg-white border-t border-gray-50">
-            <span className="font-semibold text-base mr-3 text-gray-400">A</span>
-            <div className="text-gray-600 flex-1">
-              <p className="leading-relaxed text-sm whitespace-pre-line"> {/* 답변 줄바꿈 유지 */}
-                {item.answer}
-              </p>
+        <div key={`faq-${idx}`} className="bg-white rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-5 bg-[#f5f5f7]">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-white text-[#1d1d1f] font-medium shadow-sm">
+                  Q
+                </div>
+                <h3 className="text-base font-medium text-[#1d1d1f] leading-relaxed pt-1.5 pr-8">{item.question}</h3>
+              </div>
+              <div>
+                <svg 
+                  className="h-5 w-5 text-[#86868b] group-open:rotate-180 transition-transform" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+            <div className="p-6 bg-white">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-[#f5f5f7] text-[#1d1d1f] font-medium">
+                  A
+                </div>
+                <div className="flex-1 pt-1.5">
+                  <p className="text-[#424245] leading-relaxed text-sm whitespace-pre-wrap">{item.answer}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          </details>
         </div>
       ))}
-      {/* "더 많은 질문 보기" 버튼 제거됨 */}
     </div>
   );
 };
@@ -241,57 +255,102 @@ export const renderFaqSection = (content: string): React.ReactNode => {
   }
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {qaPairs.map((pair, idx) => (
-        <div key={idx} className="bg-[#fff8fb] rounded-lg overflow-hidden border border-pink-100">
-          <div className="bg-pink-50 p-3 border-b border-pink-100">
-            <div className="flex items-start">
-              <span className="font-medium text-pink-800 mr-2 text-sm">Q.</span>
-              <span className="text-gray-800 font-medium text-sm">{pair.question}</span>
+        <div key={idx} className="bg-white rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between p-5 bg-[#f5f5f7]">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-white text-[#1d1d1f] font-medium shadow-sm">
+                  Q
+                </div>
+                <h3 className="text-base font-medium text-[#1d1d1f] leading-relaxed pt-1.5 pr-8">{pair.question}</h3>
+              </div>
+              <div>
+                <svg 
+                  className="h-5 w-5 text-[#86868b] group-open:rotate-180 transition-transform" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+            <div className="p-6 bg-white">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-[#f5f5f7] text-[#1d1d1f] font-medium">
+                  A
+                </div>
+                <div className="flex-1 pt-1.5">
+                  <p className="text-[#424245] leading-relaxed text-sm whitespace-pre-wrap">{pair.answer || '답변 내용이 없습니다.'}</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="p-3">
-            <div className="flex items-start">
-              <span className="font-medium text-[#ff68b4] mr-2 text-sm">A.</span>
-              <span className="text-gray-700 text-sm">{pair.answer || '답변 내용이 없습니다.'}</span>
-            </div>
-          </div>
+          </details>
         </div>
       ))}
     </div>
   );
 };
 
-// 섹션 렌더링 함수 개선 및 분리
-export const renderSection = (section: ProductDetailSection, targetCustomers: string = '', productCategory: string = '') => {
+// 섹션 렌더링 함수 개선
+export const renderSection = (
+  section: ProductDetailSection | string, 
+  targetCustomers: string = '', 
+  productCategory: string = ''
+) => {
   try {
-    if (!section.content || section.content.trim() === '') {
+    // 문자열이 전달된 경우의 하위 호환성 유지
+    const content = typeof section === 'string' ? section : section.content;
+    const isFAQ = typeof section !== 'string' && section.id === 'faq';
+    
+    if (!content || content.trim() === '') {
       return <p className="text-gray-400 italic text-center py-4">내용이 없습니다</p>;
     }
 
+    // FAQ 섹션은 별도 함수에서 처리
+    if (isFAQ) {
+      return renderFaqSection(content);
+    }
+
     // 콘텐츠 정리 및 강화 (필요시)
-    const cleanedContent = cleanupColons(section.content);
+    const cleanedContent = cleanupColons(content);
     const enhancedContent = enhanceContentForTarget(cleanedContent, targetCustomers, productCategory);
     const lines = enhancedContent.split(/\n/).filter(line => line.trim() !== '');
 
-    // FAQ 섹션은 별도 함수에서 처리
-    if (section.id === 'faq') {
-      return renderFaqSection(section.content);
-    }
-
     const brandPrimary = '#ff68b4'; // 테마 변수로 관리하는 것이 좋음
 
+    // 마크다운 문법 처리 (**, *, _, __, 등)
+    const processMarkdown = (text: string) => {
+      // 강조 (볼드) 처리: **텍스트** 또는 __텍스트__
+      let processed = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, 
+        (_, g1, g2) => `<strong>${g1 || g2}</strong>`);
+      
+      // 기울임 (이탤릭) 처리: *텍스트* 또는 _텍스트_
+      processed = processed.replace(/\*(.*?)\*|_(.*?)_/g, 
+        (_, g1, g2) => `<em>${g1 || g2}</em>`);
+      
+      // 취소선 처리: ~~텍스트~~
+      processed = processed.replace(/~~(.*?)~~/g, 
+        (_, g1) => `<del>${g1}</del>`);
+      
+      // HTML 태그를 React 요소로 변환
+      return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+    };
+
     return (
-      <div className="text-gray-800 whitespace-pre-line leading-relaxed">
+      <div className="text-[#1d1d1f] whitespace-pre-line leading-relaxed">
         {lines.map((line, idx) => {
-          const key = `line-${section.id}-${idx}`;
+          const key = `line-${idx}`;
 
           // 첫 줄은 섹션 제목으로 강조 (내용이 여러 줄일 때만)
           if (idx === 0 && lines.length > 1) {
             return (
-              <div key={key} className="mb-5 pb-3 border-b border-gray-200">
-                <h2 className="text-xl font-semibold" style={{ color: brandPrimary }}>
-                  {line}
+              <div key={key} className="mb-7 pb-4">
+                <h2 className="text-xl font-semibold text-[#1d1d1f]">
+                  {processMarkdown(line)}
                 </h2>
               </div>
             );
@@ -300,9 +359,9 @@ export const renderSection = (section: ProductDetailSection, targetCustomers: st
           // 질문 형식 라인 (FAQ 외 섹션) -> 부제목 스타일
           if (line.endsWith('?') || line.endsWith('？')) {
             return (
-              <div key={key} className="mt-5 mb-3">
-                <h3 className="text-lg font-semibold" style={{ color: brandPrimary }}>
-                  {line}
+              <div key={key} className="mt-6 mb-4">
+                <h3 className="text-lg font-medium text-[#1d1d1f]">
+                  {processMarkdown(line)}
                 </h3>
               </div>
             );
@@ -315,20 +374,20 @@ export const renderSection = (section: ProductDetailSection, targetCustomers: st
             const titleContentMatch = bulletContent.match(/^([^:：]+)[:：]\s*(.+)/);
             if (titleContentMatch) {
                return (
-                <div key={key} className="flex items-start mb-3 ml-4">
-                  <span className="text-[#ff68b4] mr-2 mt-1 font-bold">•</span>
+                <div key={key} className="flex items-start mb-4 ml-4">
+                  <span className="text-[#86868b] mr-3 mt-1">•</span>
                   <div>
-                    <span className="font-medium" style={{ color: brandPrimary }}>{titleContentMatch[1].trim()}</span>
-                    <span className="text-gray-700">: {titleContentMatch[2].trim()}</span>
+                    <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatch[1].trim())}</span>
+                    <span className="text-[#424245]">: {processMarkdown(titleContentMatch[2].trim())}</span>
                   </div>
                 </div>
               );
             }
             // 일반 불렛 포인트
             return (
-              <div key={key} className="flex items-start mb-3 ml-4">
-                <span className="text-[#ff68b4] mr-2 mt-1 font-bold">•</span>
-                <span className="text-gray-700">{bulletContent}</span>
+              <div key={key} className="flex items-start mb-4 ml-4">
+                <span className="text-[#86868b] mr-3 mt-1">•</span>
+                <span className="text-[#424245]">{processMarkdown(bulletContent)}</span>
               </div>
             );
           }
@@ -341,20 +400,20 @@ export const renderSection = (section: ProductDetailSection, targetCustomers: st
              const titleContentMatch = numContent.match(/^([^:：]+)[:：]\s*(.+)/);
              if (titleContentMatch) {
                return (
-                 <div key={key} className="flex items-start mb-3 ml-4">
-                   <span className="text-[#ff68b4] mr-2 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
+                 <div key={key} className="flex items-start mb-4 ml-4">
+                   <span className="text-[#86868b] mr-3 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
                    <div>
-                     <span className="font-medium" style={{ color: brandPrimary }}>{titleContentMatch[1].trim()}</span>
-                     <span className="text-gray-700">: {titleContentMatch[2].trim()}</span>
+                     <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatch[1].trim())}</span>
+                     <span className="text-[#424245]">: {processMarkdown(titleContentMatch[2].trim())}</span>
                    </div>
                  </div>
                );
              }
              // 일반 숫자 목록
             return (
-              <div key={key} className="flex items-start mb-3 ml-4">
-                <span className="text-[#ff68b4] mr-2 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
-                <span className="text-gray-700">{numContent}</span>
+              <div key={key} className="flex items-start mb-4 ml-4">
+                <span className="text-[#86868b] mr-3 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
+                <span className="text-[#424245]">{processMarkdown(numContent)}</span>
               </div>
             );
           }
@@ -363,17 +422,17 @@ export const renderSection = (section: ProductDetailSection, targetCustomers: st
            const titleContentMatchGeneral = line.match(/^([^:：]{1,30})[:：]\s*(.+)/);
            if (titleContentMatchGeneral && !line.startsWith('Q:') && !line.startsWith('A:')) {
              return (
-               <div key={key} className="mb-3 p-2 bg-gray-50 rounded-md">
-                  <span className="font-medium" style={{ color: brandPrimary }}>{titleContentMatchGeneral[1].trim()}</span>
-                  <span className="text-gray-700">: {titleContentMatchGeneral[2].trim()}</span>
+               <div key={key} className="mb-4 p-4 bg-[#f5f5f7] rounded-xl">
+                  <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatchGeneral[1].trim())}</span>
+                  <span className="text-[#424245]">: {processMarkdown(titleContentMatchGeneral[2].trim())}</span>
                </div>
              );
            }
 
           // 일반 텍스트 단락
           return (
-            <div key={key} className="mb-3">
-              <p className="text-gray-700 leading-relaxed">{line}</p>
+            <div key={key} className="mb-4">
+              <p className="text-[#424245] leading-relaxed">{processMarkdown(line)}</p>
             </div>
           );
         })}

@@ -1,6 +1,17 @@
 import { getKoreanTitle } from '@/lib/sections/section-manager';
 
+// 디버깅 헬퍼 로그 함수 추가
+const logSection = (sectionId: string) => {
+  // 로그 출력 제거
+};
+
 export const getSectionOrder = (sectionId: string): number => {
+  // 숫자만 있는 경우 그 숫자 값 사용
+  if (/^\d+$/.test(sectionId)) {
+    const numericOrder = parseInt(sectionId, 10) * 10;
+    return numericOrder;
+  }
+  
   const orderMap: Record<string, number> = {
     'title_block': 10,
     'hero_section': 20,
@@ -8,16 +19,15 @@ export const getSectionOrder = (sectionId: string): number => {
     'product_info': 40,
     'how_to_use': 50,
     'ingredients': 60,
-    'material_care': 70, // 예시, 실제 카테고리에 맞게 조정 필요
-    'size_fit': 80,       // 예시, 실제 카테고리에 맞게 조정 필요
-    'benefits': 90,       // 예시, 실제 카테고리에 맞게 조정 필요
+    'material_care': 70,
+    'size_fit': 80,
+    'benefits': 90,
     'shipping_returns': 100,
     'faq': 110,
-    'review_highlights': 120, // 예시, 실제 카테고리에 맞게 조정 필요
-    'usage_scenarios': 130,   // 예시, 실제 카테고리에 맞게 조정 필요
-    'purchase_benefits': 140, // 예시, 실제 카테고리에 맞게 조정 필요
+    'review_highlights': 120,
+    'usage_scenarios': 130,
+    'purchase_benefits': 140,
     'closing_info': 150,
-    // 기존 GeneratedContentViewer.tsx에 있던 다른 ID들도 필요시 추가
     'sub_features': 35,
     'specifications': 45,
     'warranty_info': 105,
@@ -45,55 +55,69 @@ export const getSectionOrder = (sectionId: string): number => {
     'edition_details': 17,
     'highlight_features': 31,
     'creative_possibilities': 53,
-    'full_content': 500, // 가장 마지막
-    'error': 999, // 오류는 맨 뒤
+    'full_content': 500,
+    'error': 999,
     'hook_intro': 5,
     'selling_points': 25,
     'product_detail': 41,
     'trust_elements': 115,
-    'target_customers': 1, // 가장 처음
+    'target_customers': 1,
   };
-  return orderMap[sectionId] || 500; // 기본값은 뒤로
+  
+  const result = orderMap[sectionId] || 999; // 알 수 없는 섹션은 999로 설정
+  return result;
 };
 
 export const getSectionClass = (sectionId: string, isDragged: boolean): string => {
-  let className = "mb-6 rounded-lg border border-gray-200 overflow-hidden transition-all duration-200";
+  let className = "mb-6 rounded-lg border overflow-hidden transition-all duration-200";
   if (isDragged) {
     className += " border-[#ff68b4] shadow-xl opacity-95 scale-[1.02] z-50";
   } else {
-    className += " bg-white shadow-sm hover:shadow-md";
+    className += " border-pink-100 bg-white shadow-sm hover:shadow-md hover:border-pink-200";
   }
   return className;
 };
 
 export const getEmoji = (sectionId: string): string => {
   const emojiMap: Record<string, string> = {
-    'title_block': '✨', 'hero_section': '👋', 'main_feature': '💡', 'sub_features': '🔍',
-    'how_to_use': '📝', 'specifications': '📊', 'warranty_info': '🛡️', 'shipping_return': '🚚',
-    'shipping_returns': '🚚', 'faq': '❓', 'style_guide': '👔', 'material_details': '🧵',
-    'size_chart': '📏', 'care_instructions': '🧼', 'coordination_suggestions': '👚',
-    'ingredients': '🧪', 'effect_description': '✨', 'recommended_skin_type': '👩‍🦰',
-    'safety_features': '🔒', 'age_recommendation': '👶', 'taste_description': '😋',
-    'nutrition_facts': '🥗', 'storage_instructions': '🧊', 'serving_suggestions': '🍽️',
-    'size_specifications': '📐', 'installation_guide': '🔧', 'tech_specifications': '⚙️',
-    'unique_technology': '🔬', 'compatibility_info': '🔄', 'performance_features': '⚡',
-    'content_summary': '📑', 'author_artist_info': '🎨', 'edition_details': '📚',
-    'highlight_features': '🌟', 'creative_possibilities': '💭', 'full_content': '📖',
-    'error': '⚠️', 'hook_intro': '🎯', 'selling_points': '⭐', 'product_detail': '📋',
-    'trust_elements': '🤝', 'target_customers': '👥', 'closing_info': '📌',
-    // 추가된 orderMap 키에 대한 이모지 (필요시 추가)
-    'material_care': '🧺',
-    'size_fit': '👕',
-    'benefits': '💖',
-    'review_highlights': '💬',
-    'usage_scenarios': '🖼️',
+    'product_intro': '📦',
+    'title_block': '✨',
+    'hero_section': '🌟',
+    'main_feature': '💡',
+    'product_info': '📋',
+    'how_to_use': '📝',
+    'ingredients': '🧪',
+    'material_care': '🧵',
+    'size_fit': '📏',
+    'benefits': '✅',
+    'faq': '❓',
+    'review_highlights': '⭐',
+    'usage_scenarios': '🔍',
     'purchase_benefits': '🎁',
+    'shipping_returns': '🚚',
+    'sub_features': '📌',
+    'specifications': '📊',
+    'warranty_info': '🔐',
+    'warranty': '🔐',
+    'style_guide': '👗',
+    'material_details': '🧶',
+    'size_chart': '📐',
+    'care_instructions': '🧼',
+    'coordination_suggestions': '👚',
+    'effect_description': '✨',
+    'closing_info': '📍',
+    'recommended_skin_type': '👩‍🦰',
+    'hook_intro': '🪝',
+    'selling_points': '🏷️',
+    'product_detail': '📃',
+    'trust_elements': '🛡️',
+    'target_customers': '🎯',
   };
-  return emojiMap[sectionId] || '✨'; // 기본 이모지
+  
+  return emojiMap[sectionId] || '📄';
 };
 
 export const generateSectionLink = (id: string) => `section-${id}`;
 
-// getKoreanTitle 함수는 이미 lib/sections/section-manager.ts 에 있으므로 여기서 제거하고 import 해서 사용합니다.
-// 만약 해당 파일이 없다면 여기에 getKoreanTitle 함수를 포함해야 합니다.
-// export { getKoreanTitle }; // section-manager에서 가져온다고 가정
+// 새로 추가된 함수 export
+export { logSection };
