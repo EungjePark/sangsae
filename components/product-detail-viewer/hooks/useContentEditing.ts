@@ -118,7 +118,7 @@ export function useContentEditing(): ContentEditingHook {
         sectionId,
         productInfo: {
           name: productName,
-          category: productCategory,
+          category: productCategory as any,
           targetCustomers,
         },
       });

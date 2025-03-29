@@ -5,6 +5,10 @@ import { type ProductDetailContent, type ProductDetailSection, type ProductCateg
 import { getSectionOrder, getEmoji } from './utils/sectionHelpers';
 import { Separator } from '@/components/ui/separator';
 import { getKoreanTitle } from '@/lib/sections/section-manager';
+import { Loader2, FileText, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Import child components and hooks
 import { ProductSection } from './components/ProductSection';
@@ -21,6 +25,9 @@ import { useLoading } from './hooks/useLoading';
 import { usePdfExport } from './hooks/usePdfExport';
 
 import { type GeneratedContentViewerProps, type TocItem } from './types';
+import { useProductStore } from '@/lib/store/productStore';
+import { renderSection } from './utils/renderHelpers';
+import { copyToClipboard } from './utils/clipboardUtils';
 
 const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
   generatedContent,
@@ -56,9 +63,20 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
     handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleHideSection,
   } = useSectionManagement(draggedSection, setDraggedSection, hiddenSections, setHiddenSections, sectionOrder, setSectionOrder, toast);
 
+  // 새로운 useContentEditing 훅 사용 - 매개변수 없이 호출
   const {
-    isEditing, editedContent, textareaRefs, handleStartEdit, handleCancelEdit, handleSaveEdit, handleRegenerateSection, setEditedContent
-  } = useContentEditing(generatedContent, setGeneratedContent, productName, productCategory, productDescription, targetCustomers, additionalInfo, productKeywords, shippingInfo, returnPolicy, toast);
+    editedContent,
+    isEditing,
+    editingSection,
+    startEditing,
+    cancelEditing,
+    updateEditedContent,
+    saveEdit,
+    regenerateSection,
+  } = useContentEditing();
+
+  // 로컬 편집 상태 관리 (기존 코드와의 호환을 위해)
+  const [localEditedContent, setLocalEditedContent] = useState<Record<string, string>>({});
 
   // Internal loading state specifically for section regeneration might be useful
   const { loadingProgress, loadingMessage } = useLoading(isGenerating, generatedContent);
@@ -130,6 +148,16 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
       element.classList.add('highlight-section');
       setTimeout(() => element.classList.remove('highlight-section'), 1500);
     }
+  };
+
+  // 섹션 편집 시작 처리 - 새로운 훅 API에 맞게 업데이트
+  const handleStartSectionEdit = (sectionId: string, content: string) => {
+    startEditing(sectionId, content);
+  };
+
+  // 섹션 콘텐츠 변경 처리
+  const handleEditChange = (content: string) => {
+    updateEditedContent(content);
   };
 
   // --- Render Logic ---
@@ -283,15 +311,25 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
             // 섹션 목록 표시
             sortedVisibleSections.map((section) => (
               <ProductSection
-                key={section.id} section={section} isEditing={isEditing[section.id]}
-                editedContent={editedContent[section.id]} textareaRef={(ref) => { textareaRefs.current[section.id] = ref; }}
-                targetCustomers={targetCustomers} productCategory={productCategory} draggedSection={draggedSection}
-                onDragStart={() => handleDragStart(section.id)} onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, section.id)} onDragLeave={(e) => handleDragLeave(e, section.id)}
-                onDrop={(e) => handleDrop(e, section.id)} onHide={() => handleHideSection(section.id)}
-                onStartEdit={() => handleStartEdit(section.id, section.content)} onCancelEdit={() => handleCancelEdit(section.id)}
-                onSaveEdit={() => handleSaveEdit(section.id)} onEditChange={(content) => setEditedContent(prev => ({ ...prev, [section.id]: content }))}
-                onRegenerate={() => handleRegenerateSection(section.id)}
+                key={section.id} 
+                section={section} 
+                isEditing={editingSection === section.id ? (isEditing || false) : false}
+                editedContent={editingSection === section.id ? (editedContent || '') : ''}
+                textareaRef={(ref) => {/* 더 이상 사용하지 않음 */}}
+                targetCustomers={targetCustomers} 
+                productCategory={productCategory} 
+                draggedSection={draggedSection}
+                onDragStart={() => handleDragStart(section.id)} 
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => handleDragOver(e, section.id)} 
+                onDragLeave={(e) => handleDragLeave(e, section.id)}
+                onDrop={(e) => handleDrop(e, section.id)} 
+                onHide={() => handleHideSection(section.id)}
+                onStartEdit={() => handleStartSectionEdit(section.id, section.content)} 
+                onCancelEdit={cancelEditing}
+                onSaveEdit={saveEdit} 
+                onEditChange={handleEditChange}
+                onRegenerate={() => regenerateSection(section.id)}
                 isFAQ={section.id === 'faq'}
               />
             ))
