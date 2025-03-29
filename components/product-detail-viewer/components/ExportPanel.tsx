@@ -11,20 +11,43 @@ interface ExportPanelProps {
 }
 
 export const ExportPanel: React.FC<ExportPanelProps> = ({ content }) => {
+  // 콘텐츠 상태 로깅
+  console.log('[ExportPanel] 받은 콘텐츠:', content);
+  
   // 데이터 준비 검증
   const isDataValid = !!content && !!content.sections;
   const hasRawContent = isDataValid && !!content.rawContent && content.rawContent.length > 10;
   const hasHtmlContent = isDataValid && !!content.html && content.html.length > 10;
   const hasMarkdownContent = isDataValid && !!content.markdown && content.markdown.length > 10;
   
+  console.log('[ExportPanel] 콘텐츠 검증 결과:', { 
+    isDataValid, hasRawContent, hasHtmlContent, hasMarkdownContent 
+  });
+  
   // 내용이 없을 경우 대체할 메시지
   const placeholderMessage = "내용이 준비되지 않았습니다. 상세페이지 생성을 완료해주세요.";
   
+  // 컨텐츠 백업 생성 (필요한 경우)
+  let backupRawContent = '';
+  
+  if (isDataValid && content.sections.length > 0 && (!hasRawContent || !content.rawContent)) {
+    // rawContent가 없는 경우 섹션 내용을 조합하여 대체
+    backupRawContent = content.sections.map(s => 
+      `---섹션시작:${s.id}---\n${s.content}\n---섹션끝---`
+    ).join('\n\n');
+    console.log('[ExportPanel] 백업 rawContent 생성:', backupRawContent.length);
+  }
+  
   // 원시 콘텐츠 가져오기 (없을 경우 대체 텍스트)
   // 문자열이 항상 있도록 기본값 설정
-  const rawContent: string = hasRawContent ? content.rawContent! : placeholderMessage;
-  const htmlContent: string = hasHtmlContent ? content.html! : `<div>${placeholderMessage}</div>`;
-  const markdownContent: string = hasMarkdownContent ? content.markdown! : `# ${placeholderMessage}`;
+  const rawContent: string = hasRawContent ? content.rawContent! 
+    : (backupRawContent || placeholderMessage);
+  
+  const htmlContent: string = hasHtmlContent ? content.html! 
+    : `<div>${placeholderMessage}</div>`;
+  
+  const markdownContent: string = hasMarkdownContent ? content.markdown! 
+    : `# ${placeholderMessage}`;
   
   // 기본 파일명 설정
   const defaultFilename = '상세페이지_내보내기';

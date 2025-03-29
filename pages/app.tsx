@@ -118,13 +118,18 @@ const AppPage: NextPage = () => {
       // 성공 처리
       // API 응답 데이터를 ProductDetailContent 형식으로 변환
       const apiData = result.data;
+      console.log('[App] API 응답 데이터:', apiData);
+
       const sections = Object.entries(apiData.sections || {}).map(([id, data]) => ({
         id,
         content: data.content,
       })) as ProductDetailSection[];
+
+      console.log('[App] 변환된 섹션 데이터:', sections);
       
       // 원시 콘텐츠 생성 (모든 섹션의 내용 통합)
       const rawContent = sections.map(s => `---섹션시작:${s.id}---\n${s.content}\n---섹션끝---`).join('\n\n');
+      console.log('[App] 생성된 원시 콘텐츠 길이:', rawContent.length);
       
       // HTML 및 Markdown 생성 로직 (추후 구현)
       const htmlContent = '<div class="product-content">HTML 컨텐츠는 추후 생성됩니다.</div>';
@@ -132,6 +137,7 @@ const AppPage: NextPage = () => {
       
       // 캐시 이름 생성 - 상품명과 현재 시간 포함
       const cacheName = `${productName}_${new Date().toISOString().split('T')[0]}`;
+      console.log('[App] 생성된 캐시 이름:', cacheName);
       
       const contentData: ProductDetailContent = {
         sections,
@@ -142,7 +148,8 @@ const AppPage: NextPage = () => {
         updatedAt: new Date().toISOString(),
         tokenUsage: { input: 0, output: 0 }
       };
-      
+
+      console.log('[App] 생성된 콘텐츠 데이터:', contentData);
       setGeneratedContent(contentData);
       setTotalTokenUsage({ input: 0, output: 0 }); // API 응답에 없으므로 기본값 사용
       setGenerationTime((Date.now() - startTime) / 1000);
