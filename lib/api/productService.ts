@@ -1,13 +1,14 @@
-import { type ProductDetailContent, type ProductInfo, type ProductDetailSection, type ProductCategory } from '@/types/product';
+import { type ProductDetailContent, type ProductInfo, type ProductDetailSection, type ProductCategory, ProductDetailParams } from '@/types/product';
 import { getKoreanTitle } from '@/lib/sections/section-manager';
 import { handleApiError, isSuccessResponse, ApiErrorResponse, extractErrorMessage } from './error-handler';
+import { apiCache } from './cacheManager';
 
 // API 응답을 위한 타입 정의
-interface ApiResponse<T> {
+type ApiResponse<T> = {
   data?: T;
   error?: string;
-  status: number;
-}
+  status?: number;
+};
 
 // 토큰 사용량 타입
 export interface TokenUsage {
@@ -20,90 +21,53 @@ export interface TokenUsage {
  * @param productInfo 상품 정보
  * @returns 생성된 상세 페이지 콘텐츠와 상태
  */
-export async function generateProductDetailApi(productInfo: ProductInfo): Promise<ApiResponse<ProductDetailContent>> {
+export async function generateProductDetailApi(
+  data: ProductDetailParams
+): Promise<ApiResponse<{ sections: Record<string, { content: string }> }>> {
   try {
+    // 캐시 키 생성
+    const cacheKey = apiCache.generateKey({
+      action: 'generateProductDetail',
+      productName: data.name,
+      productCategory: data.category,
+      productDescription: data.description || '',
+      targetCustomers: data.targetCustomers || '', 
+    });
+    
+    // 캐시 확인
+    const cachedResult = apiCache.get<{ sections: Record<string, { content: string }> }>(cacheKey);
+    if (cachedResult) {
+      console.log(`캐시된 제품 상세 API 결과 사용: ${data.name}`);
+      return { data: cachedResult, status: 200 };
+    }
+    
+    // API 호출
     const response = await fetch('/api/generate-product-detail', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productInfo),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
 
-    // 응답 상태 확인
-    if (!isSuccessResponse(response)) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error || '상세페이지 생성 중 오류가 발생했습니다.';
-      const apiError = handleApiError({ ...response, message: errorMessage });
+    // 응답 처리
+    if (isSuccessResponse(response)) {
+      const result = await response.json();
       
-      return {
-        error: apiError.message,
-        status: apiError.status
-      };
-    }
-
-    const data = await response.json();
-    console.debug('API 원본 응답:', data);
-
-    // 응답 데이터 처리
-    let sections: ProductDetailSection[] = [];
-    let html = '';
-    let markdown = '';
-    let cacheName = `generated-${Date.now()}`;
-    let rawContent = '';
-    let updatedAt = new Date().toISOString();
-    let tokenUsage = data.tokenUsage || { input: 0, output: 0 };
-
-    if (data.sections && Array.isArray(data.sections)) {
-      sections = data.sections;
-    } else if (data.sections?.sections && Array.isArray(data.sections.sections)) {
-      sections = data.sections.sections;
-      html = data.sections.html || '';
-      markdown = data.sections.markdown || '';
-      cacheName = data.sections.cacheName || cacheName;
-      rawContent = data.sections.rawContent || '';
-      updatedAt = data.sections.updatedAt || updatedAt;
+      // 결과 캐싱 (20분간 유효)
+      apiCache.set(cacheKey, result, 20 * 60 * 1000);
+      
+      return { data: result, status: 200 };
     } else {
-      console.error('예상치 못한 응답 구조:', data);
+      throw await handleApiError(response);
     }
-
-    // 섹션 콘텐츠 정리 (필요한 경우)
-    const cleanedSections = sections.map((section: ProductDetailSection) => {
-      let content = section.content || '';
-      const koreanTitle = getKoreanTitle(section.id);
-      
-      if (content.startsWith(koreanTitle)) {
-        content = content.substring(koreanTitle.length).trim();
-      } else if (content.startsWith(section.id)) {
-        content = content.substring(section.id.length).trim();
-      }
-      
-      return { ...section, content: content };
-    });
-
-    const result: ProductDetailContent = {
-      sections: cleanedSections,
-      cacheName,
-      rawContent,
-      html,
-      markdown,
-      updatedAt,
-      tokenUsage
-    };
-
-    console.debug('처리된 결과 구조:', result);
-    console.debug('토큰 사용량:', tokenUsage);
-
-    return {
-      data: result,
-      status: 200
-    };
-  } catch (error: unknown) {
-    // 중앙화된 에러 핸들러로 에러 처리
-    const apiError = handleApiError(error, '상세페이지 생성 중 오류가 발생했습니다.');
-    console.error('생성 오류:', apiError);
+  } catch (error) {
+    const apiError = error as ApiErrorResponse;
+    console.error('상세 페이지 생성 오류:', apiError);
     
     return {
-      error: apiError.message,
-      status: apiError.status
+      error: extractErrorMessage(apiError),
+      status: apiError.status || 500
     };
   }
 }
@@ -117,50 +81,59 @@ export async function generateProductDetailApi(productInfo: ProductInfo): Promis
  * @returns 재생성된 섹션 데이터와 상태
  */
 export async function regenerateSectionApi(
-  sectionId: string,
-  productData: ProductInfo,
-  currentContent: { sections: Record<string, { content: string }> },
-  cacheName?: string
+  params: {
+    sectionId: string;
+    productInfo: ProductInfo;
+  }
 ): Promise<ApiResponse<{ sections: Record<string, { content: string }> }>> {
   try {
-    const requestBody = {
-      sectionId,
-      productData,
-      currentContent,
-      cacheName
-    };
-
+    // 캐시 키 생성
+    const cacheKey = apiCache.generateKey({
+      action: 'regenerateSection',
+      sectionId: params.sectionId,
+      productName: params.productInfo.name,
+      productCategory: params.productInfo.category,
+      targetCustomers: params.productInfo.targetCustomers || '',
+    });
+    
+    // 캐시 확인 - 섹션 재생성은 동일한 입력에 대해 다양한 결과를 원할 수 있으므로 캐싱 확률 제한
+    const shouldUseCache = Math.random() < 0.2; // 20% 확률로만 캐시 사용
+    
+    if (shouldUseCache) {
+      const cachedResult = apiCache.get<{ sections: Record<string, { content: string }> }>(cacheKey);
+      if (cachedResult) {
+        console.log(`캐시된 섹션 재생성 결과 사용: ${params.sectionId}`);
+        return { data: cachedResult, status: 200 };
+      }
+    }
+    
+    // API 호출
     const response = await fetch('/api/regenerate-section', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
     });
 
-    // 응답 상태 확인
-    if (!isSuccessResponse(response)) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error || '섹션 재생성 중 오류가 발생했습니다.';
-      const apiError = handleApiError({ ...response, message: errorMessage });
+    // 응답 처리
+    if (isSuccessResponse(response)) {
+      const result = await response.json();
       
-      return {
-        error: apiError.message,
-        status: apiError.status
-      };
+      // 결과 캐싱 (10분간 유효, 짧게 설정하여 다양성 보장)
+      apiCache.set(cacheKey, result, 10 * 60 * 1000);
+      
+      return { data: result, status: 200 };
+    } else {
+      throw await handleApiError(response);
     }
-
-    const data = await response.json();
-    return {
-      data,
-      status: 200
-    };
-  } catch (error: unknown) {
-    // 중앙화된 에러 핸들러로 에러 처리
-    const apiError = handleApiError(error, '섹션 재생성 중 오류가 발생했습니다.');
-    console.error('섹션 재생성 중 오류 발생:', apiError);
+  } catch (error) {
+    const apiError = error as ApiErrorResponse;
+    console.error('섹션 재생성 오류:', apiError);
     
     return {
-      error: apiError.message,
-      status: apiError.status
+      error: extractErrorMessage(apiError),
+      status: apiError.status || 500
     };
   }
 } 

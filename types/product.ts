@@ -35,33 +35,72 @@ export interface ProductDetailSection {
   id: string;
   title?: string;  // title을 선택적 속성으로 변경
   content: string;
+  // 추가 필드가 필요한 경우 여기에 정의
 }
 
 // 제품 카테고리 타입 정의
 export type ProductCategory = 
-  | 'FASHION' 
-  | 'BEAUTY' 
-  | 'FOOD' 
-  | 'HOME_LIVING' 
-  | 'ELECTRONICS' 
-  | 'SPORTS' 
-  | 'BABY' 
-  | 'PET' 
-  | 'BOOKS' 
-  | 'STATIONERY' 
-  | 'TOYS' 
-  | 'HEALTH' 
-  | 'KITCHEN' 
-  | 'OTHER';
+  'cosmetics' | 'food' | 'fashion' | 'home' | 'electronics' | 
+  'furniture' | 'pet' | 'baby' | 'health' | 'sports' | 'outdoor' | 
+  'digital' | 'books' | 'toys' | 'craft' | 'stationery' | 'etc';
 
 // 시장 경쟁 수준 타입
 export type MarketCompetitionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
-// 상품 데이터 인터페이스
+// 상품 기본 정보 인터페이스 (생성 API 호출용)
+export interface ProductInfo {
+  name: string;
+  category: ProductCategory;
+  description?: string;
+  additionalInfo?: string;
+  price?: string;
+  keywords?: string[];
+  shippingInfo?: string;
+  returnPolicy?: string;
+  targetCustomers?: string;
+}
+
+// API 요청에 사용되는 확장된 제품 정보 타입
+export interface ProductDetailParams {
+  name: string;
+  category: ProductCategory;
+  description?: string;
+  price?: string;
+  keywords?: string[];
+  targetCustomers?: string;
+  additionalInfo?: string;
+}
+
+// 입력 폼에서 사용하는 ProductData 타입 정의
 export interface ProductData {
   name: string;
+  category: ProductCategory;
+  description?: string;
+  additionalInfo?: string;
+  shippingInfo?: string;
+  returnPolicy?: string;
+  keywords?: string[];
+  targetCustomers?: string;
+  targetAudience?: string;  // 타겟 고객층 필드 추가
+  // section-manager.ts와 product-detail.ts에서 사용하는 추가 필드
+  features?: string[] | string;
+  mainBenefits?: string;
+  usageTips?: string;
+  materialInfo?: string;
+  sizeInfo?: string;
+  reviewContent?: string;
+  price?: string;
+  competitionLevel?: string;
+}
+
+// 상품 데이터 인터페이스
+export interface ProductDataOriginal {
+  name: string;
   price?: string;  // 가격을 선택적 필드로 변경
-  features?: string;
+  features?: string[] | string;  // 타입을 string[] 또는 string으로 변경
+  brand?: string;  // 브랜드명 추가
+  bulletPoints?: string[];  // 주요 포인트 추가
+  specifications?: Record<string, any>;  // 제품 사양 추가
   description?: string;
   category: ProductCategory;
   additionalInfo?: string;
@@ -101,15 +140,16 @@ export interface ProductData {
 
 // 생성된 콘텐츠 인터페이스
 export interface ProductDetailContent {
-  productName: string;
-  productCategory: string;
-  productDescription: string;
-  keywords?: string[];
-  targetPrice?: string;
-  marketCompetitionLevel?: string;
-  targetAudience?: string;
-  additionalInfo?: string;
   sections: ProductDetailSection[];
+  cacheName?: string;
+  rawContent?: string;
+  updatedAt?: string;
+  tokenUsage?: { 
+    input: number; 
+    output: number;
+  };
+  html?: string;
+  markdown?: string;
 }
 
 // 섹션 재생성 요청 인터페이스
@@ -129,4 +169,4 @@ export interface RegenerateSectionRequest {
 // 섹션 재생성 응답 인터페이스
 export interface RegenerateSectionResponse {
   newSectionContent: string;
-} 
+}
