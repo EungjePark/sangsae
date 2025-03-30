@@ -4,11 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { type ProductDetailContent, type ProductDetailSection, type ProductCategory } from '@/types/product';
 import { getSectionOrder, getEmoji } from './utils/sectionHelpers';
 import { Separator } from '@/components/ui/separator';
-import { getKoreanTitle } from '@/lib/sections/section-manager';
-import { Loader2, FileText, AlertCircle } from 'lucide-react';
+import { getKoreanTitle, getCategoryDisplayName } from '@/lib/sections/section-manager';
+import { Loader2, FileText, AlertCircle, Copy, Check, Tag as TagIcon, Bookmark, Key, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { ClipboardButton } from '@/components/ui/clipboard-button';
 
 // Import child components and hooks
 import { ProductSection } from './components/ProductSection';
@@ -57,6 +59,7 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [tocSections, setTocSections] = useState<TocItem[]>([]);
   const [headerShadow, setHeaderShadow] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // --- Custom Hooks ---
   const {
@@ -171,6 +174,41 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
     updateEditedContent(content);
   };
 
+  // 복사 버튼 처리 함수
+  const handleCopy = (text: string) => {
+    copyToClipboard(text);
+    setCopied(true);
+    toast({ 
+      title: "복사 완료", 
+      description: "내용이 클립보드에 복사되었습니다.", 
+      variant: "default" 
+    });
+    
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  // 제품 상세 정보를 모두 합쳐 복사 가능한 텍스트 형태로 만듭니다
+  const getAllContentText = () => {
+    if (!generatedContent?.sections || !Array.isArray(generatedContent.sections)) return "";
+    
+    let allText = `${productName || '제품명'}\n`;
+    allText += `카테고리: ${getCategoryDisplayName(productCategory)}\n`;
+    if (productDescription) allText += `${productDescription}\n\n`;
+    if (productKeywords && productKeywords.length > 0) allText += `키워드: ${productKeywords.join(', ')}\n\n`;
+    
+    generatedContent.sections
+      .filter(section => section && section.id && !hiddenSections.includes(section.id))
+      .sort((a, b) => (sectionOrder[a.id] ?? getSectionOrder(a.id)) - (sectionOrder[b.id] ?? getSectionOrder(b.id)))
+      .forEach(section => {
+        if (section.title) allText += `## ${section.title}\n`;
+        if (section.content) allText += `${section.content}\n\n`;
+      });
+    
+    return allText;
+  };
+
   // --- Render Logic ---
   const sortedVisibleSections = React.useMemo(() => {
     if (!generatedContent?.sections || !Array.isArray(generatedContent.sections)) return [];
@@ -195,173 +233,203 @@ const GeneratedContentViewer: React.FC<GeneratedContentViewerProps> = ({
   }
 
   return (
-    <div ref={contentContainerRef} className="flex flex-col h-[1800px]">
+    <div ref={contentContainerRef} className="flex flex-col h-full">
       {/* Main Card container for the entire right column content */}
-      <Card className="shadow-lg rounded-lg overflow-hidden bg-white border border-gray-200/80 flex flex-col h-full">
-        {/* Loading Indicator */}
-        {isGenerating && loadingProgress < 100 && (
-          <LoadingIndicator progress={loadingProgress} message={loadingMessage} />
-        )}
-
-        {/* Sticky Header Area */}
-        <div className={`sticky top-0 z-10 bg-white transition-all duration-300 ${headerShadow ? 'shadow-md' : ''}`}>
-          {/* Product Info Header */}
-          <CardHeader className="p-4 pb-3 bg-gradient-to-r from-[#fff1f8] to-white border-b border-pink-100">
-            <div className="flex items-start">
-              <div className="bg-[#ff68b4] p-2 rounded-full mr-4 text-white flex-shrink-0 shadow-sm">
-                {getEmoji('product_intro') || '📦'}
-              </div>
-              <div className="flex-1">
-                <CardTitle className="text-xl font-bold text-gray-800">{productName}</CardTitle>
-                <CardDescription className="text-sm text-gray-500 mt-1 flex items-center">
-                  <span className="inline-block px-2 py-0.5 rounded-full bg-pink-50 text-pink-700 text-xs font-medium mr-2">
-                    {productCategory}
-                  </span>
-                  <span className="text-gray-400">|</span>
-                  <span className="ml-2">{targetCustomers}</span>
-                </CardDescription>
-                
-                {/* 제품 설명 요약 */}
-                {productDescription && (
-                  <p className="text-sm text-gray-600 mt-2 mb-1 line-clamp-2">
-                    {productDescription.length > 100 
-                      ? `${productDescription.substring(0, 100)}...` 
-                      : productDescription}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* 키워드 태그 */}
-            {productKeywords && productKeywords.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                <div className="flex items-center text-xs mr-1.5 text-gray-500 font-medium">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1 text-[#ff68b4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                  키워드:
+      <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm rounded-xl">
+        {/* Card Header with Product Name & Action Buttons */}
+        <CardHeader className={`bg-white p-5 border-b relative flex flex-row items-center justify-between gap-3 transition-shadow ${headerShadow ? 'shadow-md' : ''}`}>
+          <div className="flex flex-col">
+            <CardTitle className="text-xl font-bold text-gray-800">{productName}</CardTitle>
+            <CardDescription className="text-sm text-gray-500 mt-1 flex items-center">
+              <div className="px-4 py-2 rounded-lg text-gray-600 flex items-center gap-2">
+                <div className="w-6 h-6 shrink-0 bg-pink-100 rounded-lg flex items-center justify-center">
+                  <TagIcon className="w-3.5 h-3.5 text-[#ff68b4]" />
                 </div>
-                {productKeywords.map((keyword, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-pink-50 to-pink-100 text-pink-700 border border-pink-100"
-                  >
-                    {keyword}
-                  </span>
-                ))}
+                <span className="text-sm">{getCategoryDisplayName(productCategory)}</span>
               </div>
-            )}
-          </CardHeader>
-
-          {/* 목차 영역 - 디자인 개선 */}
-          <div className="px-4 py-3 bg-white border-b border-pink-50">
-            <div className="flex items-center mb-2">
-              <div className="flex items-center bg-[#ff68b4] bg-opacity-10 text-[#ff68b4] px-2 py-0.5 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-                <span className="text-xs font-semibold">목차</span>
-              </div>
-            </div>
-            
-            {/* 목차 그리드 - 최적화된 레이아웃 */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5">
-              {sortedSections.map((section) => (
-                <a
-                  key={section.id}
-                  href={`#section-${section.id}`}
-                  onClick={(e) => handleScrollToSection(e, section.id)}
-                  className="flex items-center p-1.5 rounded-md bg-white hover:bg-[#fff1f8] border border-gray-100 hover:border-pink-200 transition-all group text-xs"
-                  title={section.title}
-                >
-                  <span className="text-[#ff68b4] mr-1.5 text-sm group-hover:scale-110 transition-transform">{getEmoji(section.id)}</span>
-                  <span className="font-medium truncate text-gray-700 group-hover:text-[#ff68b4]">
-                    {section.title}
-                  </span>
-                </a>
-              ))}
-            </div>
+              <span className="text-gray-400">|</span>
+              <span className="ml-2">{targetCustomers}</span>
+            </CardDescription>
           </div>
-
-          {/* Action Toolbar - 디자인 개선 */}
-          <div className="px-4 py-3 bg-white border-b border-pink-50">
-            <ActionToolbar
-              handleRegenerate={handleRegenerate}
-              handleOpenPreview={handleOpenPreview}
-              handleExportPdf={handleTriggerPdfExport}
-              isExporting={isExporting}
-              generatedContent={generatedContent}
-              toast={toast}
+          
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleOpenPreview}
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-lg border-gray-200"
+            >
+              <FileText className="h-4 w-4 text-gray-500" />
+              <span className="sr-only">미리보기</span>
+            </Button>
+            
+            <Button
+              onClick={handleTriggerPdfExport}
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 rounded-lg border-gray-200"
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 text-gray-500 animate-spin" />
+              ) : (
+                <svg className="h-4 w-4 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 21H17C19.2091 21 21 19.2091 21 17V7C21 4.79086 19.2091 3 17 3H7C4.79086 3 3 4.79086 3 7V17C3 19.2091 4.79086 21 7 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 12L12 16L16 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+              <span className="sr-only">PDF 내보내기</span>
+            </Button>
+            
+            <ClipboardButton 
+              text={getAllContentText()}
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 p-0 rounded-lg border-gray-200"
             />
           </div>
+        </CardHeader>
+
+        {/* 제품 요약 정보 섹션 추가 */}
+        <div className="bg-gradient-to-r from-pink-50 to-pink-100/50 px-6 py-4 border-b border-pink-100">
+          <div className="flex flex-wrap gap-3 mb-3">
+            {productKeywords && productKeywords.map((keyword, index) => (
+              <Badge 
+                key={index} 
+                variant="outline" 
+                className="bg-white text-pink-700 border-pink-200 hover:bg-pink-50 transition-colors px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+              >
+                {keyword}
+              </Badge>
+            ))}
+          </div>
+          
+          {productDescription && (
+            <div className="relative mt-2 group">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4 text-pink-500" />
+                </div>
+                <div className="relative flex-1">
+                  <p className="text-gray-700 text-sm leading-relaxed font-medium italic">
+                    "{productDescription}"
+                  </p>
+                  <ClipboardButton
+                    text={productDescription}
+                    variant="ghost" 
+                    size="icon"
+                    className="absolute -right-2 -top-2 h-7 w-7 p-0 rounded-full bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Scrollable Content - 고정 높이와 자동 스크롤 설정 */}
-        <div 
-          ref={contentScrollRef} 
-          className="p-4 space-y-6 overflow-y-auto flex-grow styled-scrollbar"
-          style={{ 
-            height: "calc(100% - 30px)",
-            overflowY: 'auto',
-            scrollbarWidth: 'thin',
-            scrollBehavior: 'smooth'
-          }}
-        >
-          {sortedVisibleSections.length === 0 ? (
-            // 섹션이 없을 경우 빈 상태 표시
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="bg-pink-50 p-4 rounded-full mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 text-pink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <p className="text-lg font-semibold text-gray-700 mb-2">생성된 섹션이 없습니다</p>
-              <p className="text-sm text-gray-500">섹션을 재생성하거나 새로운 상세페이지를 생성해 보세요.</p>
-            </div>
-          ) : (
-            // 섹션 목록 표시
-            sortedVisibleSections.map((section) => (
-              <ProductSection
-                key={section.id} 
-                section={section} 
-                isEditing={editingSection === section.id ? (isEditing || false) : false}
-                editedContent={editingSection === section.id ? (editedContent || '') : ''}
-                textareaRef={(ref) => {/* 더 이상 사용하지 않음 */}}
-                targetCustomers={targetCustomers} 
-                productCategory={productCategory} 
-                draggedSection={draggedSection}
-                onDragStart={() => handleDragStart(section.id)} 
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => handleDragOver(e, section.id)} 
-                onDragLeave={(e) => handleDragLeave(e, section.id)}
-                onDrop={(e) => handleDrop(e, section.id)} 
-                onHide={() => handleHideSection(section.id)}
-                onStartEdit={() => handleStartSectionEdit(section.id, section.content)} 
-                onCancelEdit={cancelEditing}
-                onSaveEdit={saveEdit} 
-                onEditChange={handleEditChange}
-                onRegenerate={() => regenerateSection(section.id)}
-                isFAQ={section.id === 'faq'}
+        {/* Main content area with scrollable sections */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left sidebar with TOC */}
+          <div className="w-52 border-r border-gray-100 bg-white hidden md:block">
+            <ScrollArea className="h-full px-4 py-4">
+              <h3 className="font-semibold text-gray-700 mb-3 text-sm">목차</h3>
+              <ul className="space-y-1">
+                {sortedSections.map((section, index) => (
+                  <li key={index}>
+                    <a
+                      href={`#section-${section.id}`}
+                      onClick={(e) => handleScrollToSection(e, section.id)}
+                      className={`
+                        block py-2 px-3 text-sm rounded-lg transition-colors
+                        ${hiddenSections.includes(section.id) ? 'text-gray-400 line-through' : 'text-gray-700 hover:bg-pink-50/50 hover:text-pink-700'}
+                      `}
+                    >
+                      {section.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </div>
+
+          {/* Right content area with sections */}
+          <div className="flex-1 relative">
+            {isGenerating && (
+              <LoadingIndicator
+                progress={loadingProgress}
+                message={loadingMessage}
               />
-            ))
-          )}
+            )}
+
+            <ScrollArea className="h-full" ref={contentScrollRef}>
+              <div className="px-6 py-6 space-y-6">
+                {sortedVisibleSections.length > 0 ? (
+                  sortedVisibleSections.map((section) => (
+                    <ProductSection
+                      key={section.id}
+                      section={section}
+                      isEditing={editingSection === section.id ? (isEditing || false) : false}
+                      editedContent={editingSection === section.id ? (editedContent || '') : ''}
+                      targetCustomers={targetCustomers}
+                      productCategory={productCategory}
+                      draggedSection={draggedSection}
+                      textareaRef={(ref) => {/* 더 이상 사용하지 않음 */}}
+                      onDragStart={() => handleDragStart(section.id)} 
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, section.id)} 
+                      onDragLeave={(e) => handleDragLeave(e, section.id)}
+                      onDrop={(e) => handleDrop(e, section.id)} 
+                      onHide={() => handleHideSection(section.id)}
+                      onStartEdit={() => handleStartSectionEdit(section.id, section.content)} 
+                      onCancelEdit={cancelEditing}
+                      onSaveEdit={() => saveEdit(section.id, generatedContent, setGeneratedContent)}
+                      onEditChange={handleEditChange}
+                      onRegenerate={() => regenerateSection(section.id, generatedContent, handleRegenerate)} 
+                      isFAQ={section.id === 'faq'}
+                    />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+                      <AlertCircle className="w-8 h-8 text-pink-300" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">섹션이 없습니다</h3>
+                    <p className="text-sm text-gray-500 max-w-md text-center">
+                      모든 섹션이 숨겨져 있습니다. 표시할 섹션을 설정하시려면 섹션 관리 옵션을 사용하세요.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       </Card>
 
-      {/* Preview Modal */}
+      {/* Preview modal */}
       <div ref={previewContentRef}>
-        <PreviewModal
-          isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)}
-          generatedContent={generatedContent} hiddenSections={hiddenSections} sectionOrder={sectionOrder}
-          targetCustomers={targetCustomers} productCategory={productCategory}
-          onExportPdf={handleTriggerPdfExport} isExporting={isExporting} productName={productName}
-        />
+        {isPreviewOpen && (
+          <PreviewModal
+            isOpen={isPreviewOpen} 
+            onClose={() => setIsPreviewOpen(false)}
+            generatedContent={generatedContent} 
+            hiddenSections={hiddenSections} 
+            sectionOrder={sectionOrder}
+            targetCustomers={targetCustomers} 
+            productCategory={productCategory}
+            onExportPdf={handleTriggerPdfExport} 
+            isExporting={isExporting} 
+            productName={productName}
+          />
+        )}
       </div>
 
       {/* Mobile Info Panel remains outside */}
       <MobileInfoPanel
-        productName={productName} productCategory={productCategory} productDescription={productDescription}
-        targetCustomers={targetCustomers} productKeywords={productKeywords}
+        productName={productName} 
+        productCategory={productCategory} 
+        productDescription={productDescription}
+        targetCustomers={targetCustomers} 
+        productKeywords={productKeywords}
       />
     </div>
   );

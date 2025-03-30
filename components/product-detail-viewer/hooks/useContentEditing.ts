@@ -35,8 +35,8 @@ export type ContentEditingHook = {
   startEditing: (sectionId: string, initialContent: string) => void;
   cancelEditing: () => void;
   updateEditedContent: (content: string) => void;
-  saveEdit: () => Promise<void>;
-  regenerateSection: (sectionId: string) => Promise<void>;
+  saveEdit: (sectionId: string, generatedContent: ProductDetailContent | null, setGeneratedContent?: (content: ProductDetailContent) => void) => Promise<void>;
+  regenerateSection: (sectionId: string, generatedContent?: ProductDetailContent | null, handleRegenerate?: (sectionId: string) => void) => Promise<void>;
 };
 
 export function useContentEditing(): ContentEditingHook {
@@ -52,7 +52,7 @@ export function useContentEditing(): ContentEditingHook {
   const updateSectionContent = useProductStore(state => state.updateSectionContent); 
   const targetCustomers = useProductStore(state => state.targetCustomers);
   const productCategory = useProductStore(state => state.productCategory);
-  const generatedContent = useProductStore(state => state.generatedContent);
+  const storeGeneratedContent = useProductStore(state => state.generatedContent);
 
   const startEditing = useCallback((sectionId: string, initialContent: string) => {
     setEditingSection(sectionId);
@@ -70,12 +70,27 @@ export function useContentEditing(): ContentEditingHook {
     setEditedContent(content);
   }, []);
 
-  const saveEdit = useCallback(async () => {
-    if (!editingSection || editedContent === null) return;
+  const saveEdit = useCallback(async (
+    sectionId: string, 
+    generatedContent: ProductDetailContent | null, 
+    setGeneratedContent?: (content: ProductDetailContent) => void
+  ) => {
+    if (!sectionId || editedContent === null) return;
     
     try {
-      // Zustand 스토어를 통해 섹션 콘텐츠 업데이트
-      updateSectionContent(editingSection, editedContent);
+      // 만약 외부에서 전달받은 generatedContent와 setGeneratedContent가 있다면 직접 사용
+      if (generatedContent && setGeneratedContent) {
+        const updatedContent = { ...generatedContent };
+        const sectionIndex = updatedContent.sections.findIndex(s => s.id === sectionId);
+        
+        if (sectionIndex !== -1) {
+          updatedContent.sections[sectionIndex].content = editedContent;
+          setGeneratedContent(updatedContent);
+        }
+      } else {
+        // 그렇지 않으면 Zustand 스토어 사용
+        updateSectionContent(sectionId, editedContent);
+      }
       
       toast({
         title: '수정 완료',
@@ -92,10 +107,17 @@ export function useContentEditing(): ContentEditingHook {
         variant: 'destructive',
       });
     }
-  }, [editingSection, editedContent, updateSectionContent, cancelEditing, toast]);
+  }, [editedContent, updateSectionContent, cancelEditing, toast]);
 
-  const regenerateSection = useCallback(async (sectionId: string) => {
-    if (!generatedContent) {
+  const regenerateSection = useCallback(async (
+    sectionId: string,
+    generatedContent?: ProductDetailContent | null,
+    handleRegenerate?: (sectionId: string) => void
+  ) => {
+    // 외부에서 전달된 generatedContent가 없다면 스토어에서 가져옴
+    const contentToUse = generatedContent || storeGeneratedContent;
+    
+    if (!contentToUse) {
       toast({
         title: '재생성 실패',
         description: '생성된 콘텐츠가 없습니다.',
@@ -108,31 +130,37 @@ export function useContentEditing(): ContentEditingHook {
     setIsEditing('regenerating');
     
     try {
-      const cacheName = generatedContent.cacheName || '';
-      const productName = cacheName.split('_')[0] || 'Product';
-      
-      // API 호출
-      const response = await regenerateSectionApi({
-        sectionId,
-        productInfo: {
-          name: productName,
-          category: productCategory as any,
-          targetCustomers,
-        },
-      });
-      
-      // 응답 처리 (API 응답 구조에 맞게 수정)
-      if (response.data && response.data.sections && response.data.sections[sectionId]) {
-        // Zustand 스토어를 통해 섹션 콘텐츠 업데이트
-        updateSectionContent(sectionId, response.data.sections[sectionId].content);
-        
-        toast({
-          title: '재생성 완료',
-          description: '섹션 내용이 새롭게 생성되었습니다.',
-          variant: 'default',
-        });
+      // 외부에서 전달받은 핸들러가 있다면 사용
+      if (handleRegenerate) {
+        handleRegenerate(sectionId);
       } else {
-        throw new Error('섹션 재생성 실패');
+        // 기존 로직 실행
+        const cacheName = contentToUse.cacheName || '';
+        const productName = cacheName.split('_')[0] || 'Product';
+        
+        // API 호출
+        const response = await regenerateSectionApi({
+          sectionId,
+          productInfo: {
+            name: productName,
+            category: productCategory as any,
+            targetCustomers,
+          },
+        });
+        
+        // 응답 처리 (API 응답 구조에 맞게 수정)
+        if (response.data && response.data.sections && response.data.sections[sectionId]) {
+          // Zustand 스토어를 통해 섹션 콘텐츠 업데이트
+          updateSectionContent(sectionId, response.data.sections[sectionId].content);
+          
+          toast({
+            title: '재생성 완료',
+            description: '섹션 내용이 새롭게 생성되었습니다.',
+            variant: 'default',
+          });
+        } else {
+          throw new Error('섹션 재생성 실패');
+        }
       }
     } catch (error) {
       console.error('섹션 재생성 오류:', error);
@@ -147,7 +175,7 @@ export function useContentEditing(): ContentEditingHook {
       setIsEditing(null);
       setEditingSection(null);
     }
-  }, [generatedContent, productCategory, targetCustomers, updateSectionContent, toast]);
+  }, [storeGeneratedContent, productCategory, targetCustomers, updateSectionContent, toast]);
 
   return {
     editedContent,

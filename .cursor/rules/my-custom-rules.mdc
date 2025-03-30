@@ -13,3 +13,5 @@ alwaysApply: true
 - 대화 맥락(Context)을 놓치지 않기
 - 기능을 한 번에 다 뒤집어 엎어버리지 않기
 - 개발 서버 실행 전에 항상 이전에 실행 중인 서버가 있는지 확인하고, 있다면 재사용하기
+- Gemini API Model을 사용해서 코드를 작성하거나, 수정할 때는 공식문서를 참조해줘. 
+- Gemini API Doc : https://ai.google.dev/gemini-api/docs

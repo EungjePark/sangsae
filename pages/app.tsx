@@ -5,7 +5,7 @@ import { type ProductDetailContent, type ProductDetailSection, type ProductCateg
 import 'katex/dist/katex.min.css';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import ProductInputForm from '@/components/product/ProductInputForm';
+import ProductForm from '@/components/product/ProductForm';
 import { GeneratedContentViewer } from '@/components/product-detail-viewer';
 import { generateProductDetailApi } from '@/lib/api/productService'; // 서비스 레이어 함수 가져오기
 import { Loader2 } from 'lucide-react';
@@ -68,18 +68,8 @@ const AppPage: NextPage = () => {
   const [draggedSection, setDraggedSection] = useState<string | null>(null);
 
   // --- API Call Handlers ---
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // 입력 검증
-    if(!productName || !productCategory || !productDescription) {
-      toast({ 
-        title: "입력 오류", 
-        description: "상품명, 카테고리, 상품 설명은 필수 입력 항목입니다.", 
-        variant: "destructive" 
-      });
-      return;
-    }
+  const handleSubmit = async (productData: any) => {
+    // 입력 검증은 ProductForm 컴포넌트에서 이미 수행됨
     
     // 상태 초기화
     setSectionOrder({});
@@ -91,20 +81,14 @@ const AppPage: NextPage = () => {
     
     const startTime = Date.now();
     
-    // 상품 정보 객체 생성
-    const productInfo: ExtendedProductInfo = {
-      name: productName,
-      category: productCategory,
-      description: productDescription,
-      targetCustomers: targetCustomers,
-      keywords: productKeywords,
-      additionalInfo: additionalInfo,
-      shippingInfo: shippingInfo,
-      returnPolicy: returnPolicy
+    // 카테고리 값을 소문자로 변환 (API 형식에 맞추기)
+    const formattedProductData = {
+      ...productData,
+      category: productData.category ? (productData.category.toLowerCase() as ProductCategory) : productData.category
     };
     
     // 서비스 레이어 함수 호출
-    const result = await generateProductDetailApi(productInfo);
+    const result = await generateProductDetailApi(formattedProductData);
     
     if (result.error) {
       // 오류 처리
@@ -134,7 +118,7 @@ const AppPage: NextPage = () => {
       const markdownContent = '# Markdown 컨텐츠는 추후 생성됩니다.';
       
       // 캐시 이름 생성 - 상품명과 현재 시간 포함
-      const cacheName = `${productName}_${new Date().toISOString().split('T')[0]}`;
+      const cacheName = `${productData.name}_${new Date().toISOString().split('T')[0]}`;
       
       const contentData: ProductDetailContent = {
         sections,
@@ -169,8 +153,107 @@ const AppPage: NextPage = () => {
 
   // 재생성 핸들러 - 캡슐화 및 개선
   const handleRegenerate = () => {
+    if (!productName || !productCategory || !productDescription) {
+      toast({ 
+        title: "입력 오류", 
+        description: "상품명, 카테고리, 상품 설명은 필수 입력 항목입니다.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     if (window.confirm('상세페이지를 새로 생성하시겠습니까? 현재 생성된 내용은 사라집니다.')) {
-      handleSubmit(new Event('submit') as unknown as React.FormEvent);
+      // Event 객체를 사용하지 않고 직접 필요한 로직 실행
+      // 상태 초기화
+      setSectionOrder({});
+      setHiddenSections([]);
+      setDraggedSection(null);
+      setError(null);
+      setIsGenerating(true);
+      setGeneratedContent(null); // 이전 콘텐츠 즉시 제거
+      
+      const startTime = Date.now();
+      
+      // 상품 정보 객체 생성
+      const productInfo: ExtendedProductInfo = {
+        name: productName,
+        category: productCategory,
+        description: productDescription,
+        targetCustomers: targetCustomers,
+        keywords: productKeywords,
+        additionalInfo: additionalInfo,
+        shippingInfo: shippingInfo,
+        returnPolicy: returnPolicy
+      };
+      
+      // 카테고리 값을 소문자로 변환 (API 형식에 맞추기)
+      const formattedProductInfo = {
+        ...productInfo,
+        category: productInfo.category ? (productInfo.category.toLowerCase() as ProductCategory) : productInfo.category
+      };
+      
+      // 서비스 레이어 함수 호출
+      generateProductDetailApi(formattedProductInfo).then(result => {
+        if (result.error) {
+          // 오류 처리
+          console.error('생성 오류:', result.error);
+          setError(result.error);
+          toast({ 
+            title: "생성 실패", 
+            description: result.error, 
+            variant: "destructive" 
+          });
+        } else if (result.data) {
+          // 성공 처리
+          // API 응답 데이터를 ProductDetailContent 형식으로 변환
+          const apiData = result.data;
+
+          const sections = Object.entries(apiData.sections || {}).map(([id, data]) => ({
+            id,
+            content: data.content,
+            title: getKoreanTitle(id) // 한글 제목 명시적 추가
+          })) as ProductDetailSection[];
+          
+          // 원시 콘텐츠 생성 (모든 섹션의 내용 통합)
+          const rawContent = sections.map(s => `---섹션시작:${s.id}---\n${s.content}\n---섹션끝---`).join('\n\n');
+          
+          // HTML 및 Markdown 생성 로직 (추후 구현)
+          const htmlContent = '<div class="product-content">HTML 컨텐츠는 추후 생성됩니다.</div>';
+          const markdownContent = '# Markdown 컨텐츠는 추후 생성됩니다.';
+          
+          // 캐시 이름 생성 - 상품명과 현재 시간 포함
+          const cacheName = `${productName}_${new Date().toISOString().split('T')[0]}`;
+          
+          const contentData: ProductDetailContent = {
+            sections,
+            cacheName: cacheName,
+            rawContent: rawContent,
+            html: htmlContent,
+            markdown: markdownContent,
+            updatedAt: new Date().toISOString(),
+            tokenUsage: { input: 0, output: 0 }
+          };
+
+          setGeneratedContent(contentData);
+          setTotalTokenUsage({ input: 0, output: 0 }); // API 응답에 없으므로 기본값 사용
+          setGenerationTime((Date.now() - startTime) / 1000);
+          
+          const initialSectionOrder: Record<string, number> = {};
+          setSectionOrder(initialSectionOrder);
+          
+          toast({ title: "생성 완료", description: "상세페이지가 생성되었습니다" });
+        }
+        
+        // 로딩 시간 조정 (필요 시)
+        const totalElapsed = Date.now() - startTime;
+        const minTotalLoadingTime = 1500; // 최소 로딩 시간 (ms)
+        
+        if (totalElapsed < minTotalLoadingTime) {
+          setTimeout(() => setIsGenerating(false), minTotalLoadingTime - totalElapsed);
+        } else {
+          setIsGenerating(false);
+        }
+      });
     }
   };
 
@@ -198,23 +281,24 @@ const AppPage: NextPage = () => {
         </header>
         
         {/* 두 섹션을 포함하는 컨테이너 */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Product Input Form - 좌측 (고정 높이) */}
-          <div className="lg:w-1/2 flex flex-col h-auto lg:h-[1800px]">
-            <ProductInputForm
-              productName={productName} setProductName={setProductName} productCategory={productCategory} setProductCategory={setProductCategory}
-              productDescription={productDescription} setProductDescription={setProductDescription} additionalInfo={additionalInfo} setAdditionalInfo={setAdditionalInfo}
-              shippingInfo={shippingInfo} setShippingInfo={setShippingInfo} returnPolicy={returnPolicy} setReturnPolicy={setReturnPolicy}
-              productKeywords={productKeywords} setProductKeywords={setProductKeywords} targetCustomers={targetCustomers} setTargetCustomers={setTargetCustomers}
-              isGenerating={isGenerating} generatedContent={generatedContent} onSubmit={handleSubmit}
-            />
+        <div className="flex flex-col lg:flex-row gap-6 mb-10">
+          {/* Product Input Form - 좌측 */}
+          <div className="lg:w-1/2">
+            <Card className="shadow-lg rounded-lg overflow-hidden bg-white border border-gray-200/80 h-[800px]">
+              <div className="h-full overflow-y-auto styled-scrollbar">
+                <ProductForm
+                  onGenerateContent={handleSubmit}
+                  isGenerating={isGenerating}
+                />
+              </div>
+            </Card>
           </div>
           
           {/* 출력폼 (우측) - 생성된 콘텐츠 또는 빈 상태 */}
-          <div className="lg:w-1/2 flex flex-col h-auto lg:h-[1800px]">
+          <div className="lg:w-1/2">
             {generatedContent ? (
               /* Generated Content Viewer */
-              <div className="h-full flex-grow">
+              <div className="h-[800px]">
                 <GeneratedContentViewer
                   generatedContent={generatedContent} 
                   setGeneratedContent={setGeneratedContent} 
@@ -238,7 +322,7 @@ const AppPage: NextPage = () => {
                 />
               </div>
             ) : (
-              <div className="h-full flex-grow">
+              <div className="h-[800px]">
                 {/* 빈 상태 (생성 전) */}
                 {!isGenerating && !error && (
                   <Card className="shadow-lg rounded-lg overflow-hidden bg-white border border-gray-200/80 flex flex-col h-full styled-scrollbar">
@@ -251,14 +335,8 @@ const AppPage: NextPage = () => {
                       <h3 className="text-xl font-semibold text-gray-700 mb-3">상세페이지 생성을 시작해주세요</h3>
                       <p className="text-gray-500 max-w-md">
                         왼쪽 폼에 상품 정보를 입력하고 <br/>
-                        'AI 상세페이지 생성하기' 버튼을 클릭하세요.
+                        "콘텐츠 생성하기" 버튼을 클릭하면 AI가 최적화된 상세페이지를 자동으로 생성합니다.
                       </p>
-                      <div className="mt-8 text-xs text-gray-400 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        필수 입력 항목: 상품명, 카테고리, 상품 설명
-                      </div>
                     </div>
                   </Card>
                 )}

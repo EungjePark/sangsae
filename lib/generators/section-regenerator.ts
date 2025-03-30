@@ -211,6 +211,8 @@ ${existingContent?.trim() || '내용 없음'}
 - 제품의 사용, 관리, 성능, 특징 등에 관련된 실질적인 질문을 포함하세요
 - 제품 구매 결정에 도움이 되는 정보를 담은 질문을 포함하세요
 - 일반적인 고객 우려사항이나 오해를 해소하는 질문을 포함하세요
+- 각 질문의 답변에는 최소 1개 이상의 실제 사용자 경험이나 후기를 포함하세요 (예: "많은 고객들이 ~했다고 합니다", "실제 사용자 A씨는 ~라고 후기를 남겼습니다")
+- 가격 관련 정보는 포함하지 말고, 대신 제품의 가치와 혜택을 강조하세요
 
 2. 형식 지침:
 - 다음과 같은 명확한 질문-답변 형식을 반드시 사용하세요:
@@ -370,7 +372,54 @@ ${existingContent?.trim() || '내용 없음'}
           
           if (!cacheName) {
             const initialContextForNoCache = `제품 이름: ${productData.name}\n가격: ${productData.price || "정보 없음"}\n카테고리: ${productData.category}\n키워드: ${Array.isArray(productData.keywords) ? productData.keywords.join(", ") : productData.keywords || ""}\n제품 설명: ${productData.description || ""}\n추가 정보: ${productData.additionalInfo || ""}`;
-            const systemPromptForNoCache = `당신은 재미있고 매력적인 상품 소개 페이지를 만드는 전문가입니다. 제공된 제품 정보를 바탕으로 페이지의 각 섹션별 콘텐츠를 제작해 주세요. 콘텐츠는 읽기 쉽고, 친근하고, 구매욕을 자극하는 스타일로 작성해주세요. 각 섹션별 콘텐츠를 분리해서 제공해 주세요. 섹션 형식은 다음과 같습니다:\n\n[섹션 제목]\n섹션 내용\n\n여러 섹션을 작성할 때 각 섹션은 완전히 분리되어 있어야 합니다.`;
+            let systemPromptForNoCache = '';
+            
+            // sectionId에 따라 다른 프롬프트 제공
+            if (sectionId === 'faq') {
+              systemPromptForNoCache = `당신은 쇼핑몰 상품 FAQ 작성 전문가입니다. 제공된 제품 정보를 바탕으로 고객들이 실제로 궁금할 만한 질문과 그에 대한 답변을 작성해주세요. 답변은 도움이 되면서도 판매를 촉진하는 내용이어야 합니다. FAQ는 Q&A 형식으로 작성해주세요.`;
+            } else if (sectionId === 'main_feature' || sectionId === '2') {
+              systemPromptForNoCache = `# 역할: 제품 기능 및 장점 전문가
+
+## 작업 목표
+${productData.name} 제품의 핵심 기능과 장점을 명확하고 매력적으로 설명하여 고객이 제품의 가치를 쉽게 이해하도록 합니다.
+
+## 출력 형식 가이드라인
+- 가장 중요한 기능/장점부터 서술
+- 각 기능은 하나의 단락으로 구성하되, 기능명을 볼드체로 강조
+- 각 장점은 고객에게 실질적인 혜택을 중심으로 설명
+- 구체적인 수치와 비교를 통해 장점을 객관적으로 입증
+- 기술적 용어는 일반 소비자도 이해할 수 있게 설명
+
+## 콘텐츠 구성 요소
+1. 제품 핵심 가치 요약 (1-2문장)
+2. 3-5개의 주요 기능 및 장점 (각 1-2문단)
+3. 차별화 포인트 강조
+4. 실제 사용 시나리오나 활용 방법
+
+## 포함할 키워드: ${Array.isArray(productData.keywords) ? productData.keywords.join(", ") : productData.keywords || ""}`;
+            } else if (sectionId === 'how_to_use' || sectionId === '4') {
+              systemPromptForNoCache = `# 역할: 제품 사용법 설명 전문가
+
+## 작업 목표
+${productData.name} 제품의 사용 방법을 명확하고 단계별로 설명하여 고객이 쉽게 따라할 수 있도록 합니다.
+
+## 출력 형식 가이드라인
+- 단계별 사용법 (1, 2, 3...)
+- 주요 사용 팁과 요령
+- 일반적인 실수나 주의사항
+- 최적의 결과를 얻기 위한 제안
+
+## 콘텐츠 구성 요소
+1. 간략한 소개 (제품 사용 목적)
+2. 사전 준비사항 (필요한 경우)
+3. 단계별 사용 지침 (최소 3단계, 최대 7단계)
+4. 팁과 추가 사용법
+5. 유지관리 방법 (해당되는 경우)`;
+            } else {
+              // 기본 프롬프트
+              systemPromptForNoCache = `당신은 재미있고 매력적인 상품 소개 페이지를 만드는 전문가입니다. 제공된 제품 정보를 바탕으로 페이지의 각 섹션별 콘텐츠를 제작해 주세요. 콘텐츠는 읽기 쉽고, 친근하고, 구매욕을 자극하는 스타일로 작성해주세요. 각 섹션별 콘텐츠를 분리해서 제공해 주세요. 섹션 형식은 다음과 같습니다:\n\n[섹션 제목]\n섹션 내용\n\n여러 섹션을 작성할 때 각 섹션은 완전히 분리되어 있어야 합니다.`;
+            }
+            
             prompt = `초기 제품 정보:\n${initialContextForNoCache}\n\n시스템 안내:\n${systemPromptForNoCache}\n\n이제 다음 내용을 개선해주세요:\n${regenerationPromptText}`;
           }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Eye, Download, Loader2 } from 'lucide-react';
+import { RefreshCw, Eye, Download, Loader2, FileText } from 'lucide-react';
 import { type ProductDetailContent } from '@/types/product';
 import { toast } from '@/hooks/use-toast'; // toast 함수 임포트
 
@@ -22,82 +22,48 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
   toast
 }) => {
   return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-3">
-          <Button
-            onClick={handleRegenerate}
-            variant="outline"
-            size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
-            title="상세페이지를 새로 생성합니다"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            전체 재생성
-          </Button>
-          
-          <Button
-            onClick={handleOpenPreview}
-            variant="outline"
-            size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
-            title="전체 상세페이지를 한 번에 봅니다"
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            미리보기
-          </Button>
-        </div>
+    <div className="flex justify-between items-center">
+      <div className="flex items-center space-x-2">
+        <Button 
+          onClick={handleRegenerate} 
+          size="sm" 
+          variant="ghost"
+          disabled={!generatedContent}
+          className="text-sm flex items-center gap-1.5 text-gray-600 hover:text-pink-600 hover:bg-pink-50/50 rounded-lg px-3 h-9 transition-all duration-200"
+        >
+          <RefreshCw className="h-4 w-4 text-pink-500" />
+          재생성
+        </Button>
         
-        <div>
-          <Button
-            onClick={handleExportPdf}
-            variant="outline"
-            size="sm"
-            className="h-9 px-3 text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff1f8] hover:border-pink-200 border-pink-100 transition-colors shadow-sm"
-            disabled={isExporting}
-            title="상세페이지를 PDF 파일로 저장합니다"
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                내보내는 중...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                PDF 내보내기
-              </>
-            )}
-          </Button>
-        </div>
+        <div className="h-6 border-r border-gray-200/80"></div>
+        
+        <Button 
+          onClick={handleOpenPreview} 
+          size="sm" 
+          variant="ghost"
+          disabled={!generatedContent}
+          className="text-sm flex items-center gap-1.5 text-gray-600 hover:text-pink-600 hover:bg-pink-50/50 rounded-lg px-3 h-9 transition-all duration-200"
+        >
+          <Eye className="h-4 w-4 text-pink-500" />
+          미리보기
+        </Button>
       </div>
       
-      {generatedContent.tokenUsage && (
-        <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-          <div className="flex items-center space-x-4 text-xs text-gray-400">
-            <div>
-              <span className="font-medium text-gray-500">처리 토큰:</span> {generatedContent.tokenUsage.input + generatedContent.tokenUsage.output}
-            </div>
-            {/* generationTime 속성이 없을 수 있으므로 조건부로 렌더링 */}
-            {(generatedContent as any).generationTime && (
-              <div>
-                <span className="font-medium text-gray-500">소요 시간:</span> {((generatedContent as any).generationTime).toFixed(2)}초
-              </div>
-            )}
-          </div>
-          
-          <div className="text-xs text-gray-400">
-            <a 
-              href="https://docs.google.com/forms/d/e/1FAIpQLScF-kgXGVNxNSD4ZQA4XVQQXtZ6NwMQqQZt-GAyf8VMdDcLYg/viewform?usp=sf_link" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#ff68b4] hover:underline transition-colors"
-            >
-              피드백 보내기
-            </a>
-          </div>
-        </div>
-      )}
+      <Button 
+        onClick={handleExportPdf} 
+        size="sm" 
+        variant={!generatedContent || isExporting ? "ghost" : "outline"}
+        disabled={!generatedContent || isExporting}
+        className={`text-sm flex items-center gap-1.5 rounded-lg px-3 h-9 transition-all duration-200 
+          ${!generatedContent || isExporting 
+            ? "text-gray-400" 
+            : "text-pink-600 border-pink-200 hover:bg-pink-50/80 hover:border-pink-300"}`}
+      >
+        {isExporting ? 
+          <><Loader2 className="h-4 w-4 animate-spin text-pink-400" /> 변환 중...</> : 
+          <><FileText className="h-4 w-4 text-pink-500" /> PDF 내보내기</>
+        }
+      </Button>
     </div>
   );
 };

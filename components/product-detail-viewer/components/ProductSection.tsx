@@ -1,12 +1,13 @@
 import React from 'react';
-import { Button } from '@/components/ui/button'; // Assuming path
-import { X, Loader2, Edit, RefreshCw, Save, XCircle } from 'lucide-react'; // Import necessary icons
+import { Button } from '@/components/ui/button';
+import { GripVertical, Pencil, EyeOff, RefreshCw } from 'lucide-react';
 import { getSectionClass, getEmoji } from '../utils/sectionHelpers';
-import { getKoreanTitle } from '@/lib/sections/section-manager'; // Assuming path
+import { getKoreanTitle } from '@/lib/sections/section-manager';
 import { renderSection } from '../utils/renderHelpers';
 // import { cleanupColons } from '../utils/contentFormatters'; // Cleanup is done in the hook before passing down
 import { type ProductDetailSection, type ProductCategory } from '@/types/product'; // Assuming path
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ProductSectionProps {
   section: ProductDetailSection;
@@ -358,102 +359,121 @@ export const ProductSection: React.FC<ProductSectionProps> = ({
         return renderProductInfoContent(section.content);
       default:
         // 일반 마크다운 콘텐츠 처리
-        // 수정된 renderSection 함수에 맞게 인자 2개만 전달
-        return renderSection(section, targetCustomers, productCategory);
+        // renderSection 함수에 올바른 인자 전달
+        return renderSection(section.content, targetCustomers, productCategory);
     }
   };
 
   return (
-    <Card
+    <div
       id={`section-${section.id}`}
-      className={getSectionClass(section.id, draggedSection === section.id)}
-      draggable
+      draggable={!isEditing}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
       onDrop={onDrop}
+      onDragLeave={onDragLeave}
+      className={`relative transition-all duration-300 ease-in-out
+        ${draggedSection === section.id ? 'transform scale-[0.99] opacity-50' : ''}
+      `}
     >
-      {/* 섹션 헤더 - 섹션 ID 대신 한글 제목 표시 */}
-      <CardHeader className="p-4 flex items-center justify-between bg-gradient-to-r from-[#fff1f8] to-white border-b border-pink-100">
-        <div className="flex items-center">
-          <span className="text-[#ff68b4] mr-2 text-xl">{getEmoji(section.id)}</span>
-          <h3 className="font-semibold text-gray-800 hover:text-[#ff68b4] transition-colors">
-            {getKoreanTitle(section.id) || section.title || "섹션 제목 없음"}
-          </h3>
-        </div>
-      </CardHeader>
-
-      {/* 콘텐츠 영역 */}
-      <CardContent className="p-5 pt-4 bg-white">
-        {isEditing === true ? (
-          // 편집 모드
-          <div className="mt-1">
-            <textarea
-              ref={textareaRef}
-              value={editedContent}
-              onChange={handleTextareaInput}
-              className="w-full min-h-[150px] p-3 text-sm border rounded-md border-gray-300 focus:border-[#ff68b4] focus:ring focus:ring-[#ff68b4]/20 transition-all"
-              placeholder="여기에 내용을 작성하세요..."
-            ></textarea>
-            
-            {/* 기존 편집 버튼 영역 */}
-            <div className="flex space-x-2 mt-3 justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onCancelEdit}
-                className="text-xs h-7 px-2 text-gray-600 hover:text-red-600 hover:bg-red-50 border-gray-200 hover:border-red-200"
-              >
-                <XCircle className="h-3 w-3 mr-1"/> 취소
-              </Button>
-              <Button
-                size="sm"
-                onClick={onSaveEdit}
-                className="text-xs h-7 px-2 bg-[#ff68b4] hover:bg-[#ff45a8] text-white"
-              >
-                <Save className="h-3 w-3 mr-1"/> 저장
-              </Button>
+      <Card className={`relative overflow-hidden border border-gray-100/70 rounded-xl shadow-md
+        hover:shadow-lg transition-all duration-300
+      `}>
+        {/* Section Header with gradient background */}
+        <CardHeader className="bg-gradient-to-r from-white via-white to-pink-50/30 border-b border-pink-50/60 z-10 flex flex-row items-start gap-3 p-5">
+          {/* Emoji Icon with animated background */}
+          <div className="relative flex-shrink-0 text-xl p-2.5 bg-gradient-to-r from-pink-500 to-pink-400 text-white rounded-lg shadow-sm transition-transform duration-300 transform hover:scale-105" aria-hidden="true">
+            {getEmoji(section.id)}
+            <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full shadow-sm"></span>
+          </div>
+          
+          {/* Title & Description */}
+          <div className="flex-1">
+            <div className="text-lg font-bold text-gray-800 flex items-center">
+              {section.title}
+              {section.id === 'faq' && (
+                <span className="ml-2 text-xs font-normal px-1.5 py-0.5 bg-pink-100/80 text-pink-700 rounded-full">
+                  FAQ
+                </span>
+              )}
             </div>
           </div>
-        ) : isEditing === 'regenerating' ? (
-          // 재생성 모드
-          <div className="mt-1 py-6 flex items-center justify-center text-center">
-            <Loader2 className="h-5 w-5 text-[#ff68b4] animate-spin mr-2" />
-            <span className="text-gray-600 text-sm">AI가 새로운 내용을 만들고 있어요...</span>
+
+          {/* Section Actions with hover effects */}
+          <div className="flex-shrink-0 flex items-center gap-1.5">
+            <Button
+              onClick={onStartEdit}
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 rounded-lg text-gray-600 hover:text-pink-600 hover:bg-pink-50/80 transition-colors duration-200"
+              title="섹션 편집"
+            >
+              <Pencil className="h-4 w-4" />
+              <span className="sr-only">편집</span>
+            </Button>
+            
+            <Button
+              onClick={onRegenerate}
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 rounded-lg text-gray-600 hover:text-pink-600 hover:bg-pink-50/80 transition-colors duration-200"
+              title="섹션 재생성"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="sr-only">재생성</span>
+            </Button>
+            
+            <Button
+              onClick={onHide}
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 rounded-lg text-gray-600 hover:text-pink-600 hover:bg-pink-50/80 transition-colors duration-200"
+              title="섹션 숨기기"
+            >
+              <EyeOff className="h-4 w-4" />
+              <span className="sr-only">숨기기</span>
+            </Button>
           </div>
-        ) : (
-          // 조회 모드
-          <>
-            {/* 개선된 섹션 내용 렌더링 - 마크다운 지원 */}
-            <div className="mt-1 prose prose-sm max-w-none prose-pink">
+        </CardHeader>
+
+        {/* Section Content with improved spacing */}
+        <CardContent className="p-5 pt-4 pb-5 relative z-0 bg-white overflow-hidden">
+          {isEditing ? (
+            <div className="space-y-3">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => onEditChange(e.target.value)}
+                ref={textareaRef}
+                className="min-h-[200px] w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:ring-2 focus:ring-pink-200/70 focus:ring-opacity-70 transition-all shadow-sm"
+                placeholder="내용을 입력하세요..."
+              />
+              <div className="flex justify-end space-x-2 pt-3">
+                <Button 
+                  onClick={onCancelEdit} 
+                  variant="outline" 
+                  size="sm"
+                  className="text-sm rounded-lg border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  취소
+                </Button>
+                <Button 
+                  onClick={onSaveEdit} 
+                  variant="default" 
+                  size="sm"
+                  className="bg-gradient-to-r from-pink-500 to-pink-400 text-white hover:from-pink-600 hover:to-pink-500 rounded-lg text-sm shadow-sm transition-all duration-300 hover:shadow"
+                >
+                  저장하기
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="prose prose-pink max-w-none">
               {renderSectionContent()}
             </div>
-            
-            {/* 기존 액션 버튼 영역 */}
-            <div className="flex mt-4 pt-3 space-x-2 border-t border-gray-100 justify-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff8fb]"
-                onClick={onStartEdit}
-                title="이 섹션 편집하기"
-              >
-                <Edit className="h-3 w-3 mr-1" /> 편집
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-gray-600 hover:text-[#ff68b4] hover:bg-[#fff8fb]"
-                onClick={onRegenerate}
-                title="이 섹션 다시 생성하기"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" /> 재생성
-              </Button>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

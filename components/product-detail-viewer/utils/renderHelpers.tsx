@@ -188,8 +188,8 @@ const renderFAQSection = (lines: string[], targetCustomers: string = '', product
  * FAQ 섹션 렌더링을 위한 헬퍼 함수
  * Q: 질문 / A: 답변 형식의 내용을 예쁘게 렌더링합니다.
  */
-export const renderFaqSection = (content: string): React.ReactNode => {
-  if (!content) return null;
+export const renderFaqSection = (content: string): JSX.Element => {
+  if (!content) return <div>내용이 없습니다.</div>;
   
   // Q&A 쌍으로 분리 (s 플래그 없이 구현)
   // 여러 줄에 걸쳐 패턴 매칭을 위해 콘텐츠를 줄바꿈 문자로 분리하고 처리
@@ -296,150 +296,171 @@ export const renderFaqSection = (content: string): React.ReactNode => {
 };
 
 // 섹션 렌더링 함수 개선
-export const renderSection = (
-  section: ProductDetailSection | string, 
-  targetCustomers: string = '', 
-  productCategory: string = ''
-) => {
-  try {
-    // 문자열이 전달된 경우의 하위 호환성 유지
-    const content = typeof section === 'string' ? section : section.content;
-    const isFAQ = typeof section !== 'string' && section.id === 'faq';
-    
-    if (!content || content.trim() === '') {
-      return <p className="text-gray-400 italic text-center py-4">내용이 없습니다</p>;
-    }
-
-    // FAQ 섹션은 별도 함수에서 처리
-    if (isFAQ) {
-      return renderFaqSection(content);
-    }
-
-    // 콘텐츠 정리 및 강화 (필요시)
-    const cleanedContent = cleanupColons(content);
-    const enhancedContent = enhanceContentForTarget(cleanedContent, targetCustomers, productCategory);
-    const lines = enhancedContent.split(/\n/).filter(line => line.trim() !== '');
-
-    const brandPrimary = '#ff68b4'; // 테마 변수로 관리하는 것이 좋음
-
-    // 마크다운 문법 처리 (**, *, _, __, 등)
-    const processMarkdown = (text: string) => {
-      // 강조 (볼드) 처리: **텍스트** 또는 __텍스트__
-      let processed = text.replace(/\*\*(.*?)\*\*|__(.*?)__/g, 
-        (_, g1, g2) => `<strong>${g1 || g2}</strong>`);
-      
-      // 기울임 (이탤릭) 처리: *텍스트* 또는 _텍스트_
-      processed = processed.replace(/\*(.*?)\*|_(.*?)_/g, 
-        (_, g1, g2) => `<em>${g1 || g2}</em>`);
-      
-      // 취소선 처리: ~~텍스트~~
-      processed = processed.replace(/~~(.*?)~~/g, 
-        (_, g1) => `<del>${g1}</del>`);
-      
-      // HTML 태그를 React 요소로 변환
-      return <span dangerouslySetInnerHTML={{ __html: processed }} />;
-    };
-
-    return (
-      <div className="text-[#1d1d1f] whitespace-pre-line leading-relaxed">
-        {lines.map((line, idx) => {
-          const key = `line-${idx}`;
-
-          // 첫 줄은 섹션 제목으로 강조 (내용이 여러 줄일 때만)
-          if (idx === 0 && lines.length > 1) {
-            return (
-              <div key={key} className="mb-7 pb-4">
-                <h2 className="text-xl font-semibold text-[#1d1d1f]">
-                  {processMarkdown(line)}
-                </h2>
-              </div>
-            );
-          }
-
-          // 질문 형식 라인 (FAQ 외 섹션) -> 부제목 스타일
-          if (line.endsWith('?') || line.endsWith('？')) {
-            return (
-              <div key={key} className="mt-6 mb-4">
-                <h3 className="text-lg font-medium text-[#1d1d1f]">
-                  {processMarkdown(line)}
-                </h3>
-              </div>
-            );
-          }
-
-          // 불렛 포인트 (들여쓰기 및 기본 마커)
-          if (line.match(/^[-•●◦○*]\s+/)) {
-            const bulletContent = line.replace(/^[-•●◦○*]\s+/, '');
-            // 불렛 포인트 내 "타이틀: 내용" 형식 처리
-            const titleContentMatch = bulletContent.match(/^([^:：]+)[:：]\s*(.+)/);
-            if (titleContentMatch) {
-               return (
-                <div key={key} className="flex items-start mb-4 ml-4">
-                  <span className="text-[#86868b] mr-3 mt-1">•</span>
-                  <div>
-                    <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatch[1].trim())}</span>
-                    <span className="text-[#424245]">: {processMarkdown(titleContentMatch[2].trim())}</span>
-                  </div>
-                </div>
-              );
-            }
-            // 일반 불렛 포인트
-            return (
-              <div key={key} className="flex items-start mb-4 ml-4">
-                <span className="text-[#86868b] mr-3 mt-1">•</span>
-                <span className="text-[#424245]">{processMarkdown(bulletContent)}</span>
-              </div>
-            );
-          }
-
-          // 숫자 목록 (들여쓰기 및 숫자 표시)
-          if (line.match(/^\d+\.\s+/)) {
-            const numMatch = line.match(/^(\d+)\.\s+/);
-            const numContent = line.replace(/^\d+\.\s+/, '');
-             // 숫자 목록 내 "타이틀: 내용" 형식 처리
-             const titleContentMatch = numContent.match(/^([^:：]+)[:：]\s*(.+)/);
-             if (titleContentMatch) {
-               return (
-                 <div key={key} className="flex items-start mb-4 ml-4">
-                   <span className="text-[#86868b] mr-3 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
-                   <div>
-                     <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatch[1].trim())}</span>
-                     <span className="text-[#424245]">: {processMarkdown(titleContentMatch[2].trim())}</span>
-                   </div>
-                 </div>
-               );
-             }
-             // 일반 숫자 목록
-            return (
-              <div key={key} className="flex items-start mb-4 ml-4">
-                <span className="text-[#86868b] mr-3 mt-1 w-5 text-right font-medium">{numMatch?.[1]}.</span>
-                <span className="text-[#424245]">{processMarkdown(numContent)}</span>
-              </div>
-            );
-          }
-
-          // "타이틀: 내용" 형식 (일반 텍스트, Q:/A: 제외)
-           const titleContentMatchGeneral = line.match(/^([^:：]{1,30})[:：]\s*(.+)/);
-           if (titleContentMatchGeneral && !line.startsWith('Q:') && !line.startsWith('A:')) {
-             return (
-               <div key={key} className="mb-4 p-4 bg-[#f5f5f7] rounded-xl">
-                  <span className="font-medium text-[#1d1d1f]">{processMarkdown(titleContentMatchGeneral[1].trim())}</span>
-                  <span className="text-[#424245]">: {processMarkdown(titleContentMatchGeneral[2].trim())}</span>
-               </div>
-             );
-           }
-
-          // 일반 텍스트 단락
-          return (
-            <div key={key} className="mb-4">
-              <p className="text-[#424245] leading-relaxed">{processMarkdown(line)}</p>
-            </div>
-          );
-        })}
-      </div>
-    );
-  } catch (error) {
-    console.error('섹션 렌더링 오류:', error);
-    return <div className="text-red-500 p-4">내용을 표시하는 중 오류가 발생했습니다.</div>;
+export function renderSection(content: string, targetCustomers?: string, productCategory?: string): JSX.Element {
+  if (typeof content !== 'string') {
+    console.warn('renderSection: content is not a string', content);
+    return <div className="text-red-500">콘텐츠 형식 오류</div>;
   }
-};
+
+  // 추가 컨텐츠 정리 - 마크다운 문법 제거
+  content = content
+    .replace(/\*\*\*(.*?)\*\*\*/g, '$1')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^#+\s+(.*)$/gm, '$1')
+    .replace(/\n{3,}/g, '\n\n');
+
+  // 일반 텍스트 렌더링으로 단순화
+  return renderGenericSection(content);
+}
+
+// 기능/혜택 섹션 렌더링 함수
+export function renderFeatureSection(sectionId: string, content: string): JSX.Element {
+  // 기능 포인트 구분
+  // 패턴: 1. 항목, • 항목, - 항목, 또는 "특징: 설명" 형식
+  const featurePatterns = [
+    /(\d+\.\s*(.*?))\s*\n/g,  // 숫자. 항목
+    /(•\s*(.*?))\s*\n/g,      // • 항목
+    /(-\s*(.*?))\s*\n/g,      // - 항목
+    /(.*?):\s*(.*?)\s*\n/g    // 특징: 설명
+  ];
+  
+  // 각 줄을 분석하여 기능 항목 추출
+  const contentLines = content.split('\n');
+  let processedContent = '';
+  
+  // 각 줄에 대한 처리
+  for (let i = 0; i < contentLines.length; i++) {
+    const line = contentLines[i].trim();
+    
+    if (!line) {
+      processedContent += '\n\n';
+      continue;
+    }
+    
+    // 기능 항목인지 확인
+    let isFeatureItem = false;
+    for (const pattern of featurePatterns) {
+      if (pattern.test(line + '\n')) {
+        isFeatureItem = true;
+        break;
+      }
+    }
+    
+    // 기능 항목을 카드 형식으로 변환
+    if (isFeatureItem) {
+      // 항목 형식 추출
+      let featureTitle = '';
+      let featureDescription = '';
+      
+      if (line.match(/^\d+\.\s+/)) {
+        // 숫자. 항목 형식
+        [featureTitle, featureDescription] = line.replace(/^\d+\.\s+/, '').split(/:\s+/, 2);
+        if (!featureDescription) featureDescription = featureTitle;
+      } else if (line.match(/^[•-]\s+/)) {
+        // • 또는 - 항목 형식
+        [featureTitle, featureDescription] = line.replace(/^[•-]\s+/, '').split(/:\s+/, 2);
+        if (!featureDescription) featureDescription = featureTitle;
+      } else if (line.includes(':')) {
+        // 특징: 설명 형식
+        [featureTitle, featureDescription] = line.split(/:\s+/, 2);
+      } else {
+        // 그 외에는 전체를 설명으로 처리
+        featureDescription = line;
+      }
+      
+      processedContent += `<div class="feature-card">
+        <div class="feature-title">${featureTitle || '기능'}</div>
+        <div class="feature-description">${featureDescription || ''}</div>
+      </div>\n\n`;
+    } else {
+      // 일반 텍스트는 문단으로 처리
+      processedContent += `<p>${line}</p>\n\n`;
+    }
+  }
+  
+  // 기능/혜택 섹션 렌더링
+  return (
+    <div className="features-container">
+      <div dangerouslySetInnerHTML={{ __html: processedContent }}></div>
+      <style jsx global>{`
+        .features-container p {
+          margin: 0.75rem 0;
+          color: #4b5563;
+        }
+        .feature-card {
+          background: white;
+          border: 1px solid #f3f4f6;
+          border-radius: 0.75rem;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
+        }
+        .feature-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          border-color: #fee2e2;
+        }
+        .feature-title {
+          font-weight: 600;
+          color: #ff68b4;
+          margin-bottom: 0.5rem;
+        }
+        .feature-description {
+          color: #4b5563;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// 일반 섹션 렌더링
+export function renderGenericSection(content: string): JSX.Element {
+  // 일반 텍스트는 단락으로 구분하여 표시
+  const paragraphs = content.split(/\n{2,}/);
+  
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((paragraph, idx) => {
+        // 비어있는 단락은 무시
+        if (!paragraph.trim()) return null;
+        
+        // 목록 항목인지 확인
+        if (paragraph.match(/^\s*(\d+\.\s|•\s|-\s)/m)) {
+          // 목록 항목을 추출하여 표시
+          const listItems = paragraph
+            .split(/\n/)
+            .filter(line => line.trim())
+            .map(line => line.replace(/^\s*(\d+\.\s|•\s|-\s)/, '').trim());
+          
+          return (
+            <ul key={idx} className="list-disc pl-5 space-y-2">
+              {listItems.map((item, itemIdx) => (
+                <li key={itemIdx} className="text-gray-700">{item}</li>
+              ))}
+            </ul>
+          );
+        }
+        
+        // 일반 텍스트는 단락으로 표시
+        return (
+          <p key={idx} className="text-gray-700 leading-relaxed">{paragraph}</p>
+        );
+      }).filter(Boolean)}
+    </div>
+  );
+}
+
+// 추가 헬퍼 함수들
+export function renderAdditionalInfoSection(content: string): JSX.Element {
+  return renderGenericSection(content);
+}
+
+export function renderShippingSection(content: string): JSX.Element {
+  return renderGenericSection(content);
+}
+
+export function renderProductInfoSection(content: string, category: string): JSX.Element {
+  return renderGenericSection(content);
+}
